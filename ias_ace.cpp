@@ -179,8 +179,7 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
     outZclFrame.setCommandId(CMD_GET_PANEL_STATUS_RESPONSE);
 
     outZclFrame.setFrameControl(deCONZ::ZclFCClusterCommand |
-                             deCONZ::ZclFCDirectionServerToClient |
-                             deCONZ::ZclFCDisableDefaultResponse);
+                                deCONZ::ZclFCDirectionServerToClient); // deCONZ::ZclFCDisableDefaultResponse
 
     { // payload
         QDataStream stream(&outZclFrame.payload(), QIODevice::WriteOnly);
