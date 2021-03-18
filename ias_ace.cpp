@@ -26,7 +26,7 @@
 #define CMD_GET_BYPASSED_ZONE_LIST 0x08
 #define CMD_GET_ZONE_STATUS 0x09
 
-
+02 04 31 31 31 31 00
 void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame)
 {
     if (zclFrame.isDefaultResponse())
@@ -46,25 +46,39 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
 
     if (zclFrame.commandId() == CMD_ARM)
     {
+        
+        DBG_Printf(DBG_INFO, "Debug Keypad : Arm command, size %d\n",zclFrame.payload().size());
+        
         quint8 armMode;
+        quint16 length = zclFrame.payload().size() - 2;
         QString code;
         quint8 zoneId;
+        quint8 codeTemp;
 
+        //  Arm mode
+        //-------------    
+        // 0x00 Disarm    
+        // 0x01 Arm Day/Home Zones Only
+        // 0x02 Arm Night/Sleep Zones Only
+        // 0x03 Arm All Zones
+
+        //Arm Mode
         stream >> armMode;
-
-        if (zclFrame.payload().length() == 6)
+        
+        if (length > 0)
         {
-            quint8 codeTemp;
-            stream >> codeTemp;     // 0 for keyfobs or other devices not supporting any codes
-            code = codeTemp;
+            //Arm/Disarm Code
+            for (; length > 0; length--)
+            {
+                stream >> codeTemp;
+                code.append(QChar(codeTemp));
+            }
         }
-        else
-        {
-            // Not yet supported
-            return;
-        }
-
+        
+        //Zone ID
         stream >> zoneId;
+        
+        DBG_Printf(DBG_INFO, "Debug Keypad : Arm command, Arm mode %d, code %s, Zone id%d\n", armMode , qPrintable(code) ,zoneId);
 
         if (armMode <= 3)
         {
