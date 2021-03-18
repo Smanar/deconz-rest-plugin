@@ -26,7 +26,7 @@
 #define CMD_GET_BYPASSED_ZONE_LIST 0x08
 #define CMD_GET_ZONE_STATUS 0x09
 
-02 04 31 31 31 31 00
+//02 04 31 31 31 31 00
 void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame)
 {
     if (zclFrame.isDefaultResponse())
