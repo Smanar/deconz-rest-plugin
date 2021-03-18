@@ -26,7 +26,8 @@
 #define CMD_GET_BYPASSED_ZONE_LIST 0x08
 #define CMD_GET_ZONE_STATUS 0x09
 
-//02 04 31 31 31 31 00
+// 02 04 31 31 31 31 00
+// size = 7
 void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame)
 {
     if (zclFrame.isDefaultResponse())
@@ -54,6 +55,8 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         QString code;
         quint8 zoneId;
         quint8 codeTemp;
+        
+        quint8 dummy;
 
         //  Arm mode
         //-------------    
@@ -65,8 +68,14 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         //Arm Mode
         stream >> armMode;
         
-        if (length > 0)
+        if (length > 1)
         {
+            // This part can vary, according to device
+            
+            // Code lenght
+            stream >> dummy;
+            length -= 1;
+            
             //Arm/Disarm Code
             for (; length > 0; length--)
             {
