@@ -6346,6 +6346,7 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const SensorFi
         else if (modelId == QLatin1String("URC4450BC0-X-R"))
         {
             sensorNode.addItem(DataTypeBool, RConfigArmed);
+            sensorNode.addItem(DataTypeString, RStateAction);
         }
     }
     else if (sensorNode.type().endsWith(QLatin1String("LightLevel")))
