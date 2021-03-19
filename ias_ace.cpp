@@ -308,11 +308,10 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, uint8_t cmd)
     task.zclFrame.setFrameControl(deCONZ::ZclFCClusterCommand |
                                   deCONZ::ZclFCDirectionClientToServer |
                                   deCONZ::ZclFCDisableDefaultResponse);
+     // payload
+    QDataStream stream(&task.zclFrame.payload(), QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
 
-    { // payload
-        QDataStream stream(&task.zclFrame.payload(), QIODevice::WriteOnly);
-        stream.setByteOrder(QDataStream::LittleEndian);
-    }
     
     //data
     stream << static_cast<quint8>(cmd);
@@ -320,12 +319,12 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, uint8_t cmd)
     stream << (quint8) 0x00; // Audible Notification
     stream << (quint8) 0x00; // Alarm status
 
-    { // ZCL frame
-        task.req.asdu().clear(); // cleanup old request data if there is any
-        QDataStream stream(&task.req.asdu(), QIODevice::WriteOnly);
-        stream.setByteOrder(QDataStream::LittleEndian);
-        task.zclFrame.writeToStream(stream);
-    }
+    // ZCL frame
+    task.req.asdu().clear(); // cleanup old request data if there is any
+    QDataStream stream(&task.req.asdu(), QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    task.zclFrame.writeToStream(stream);
+
 
     return addTask(task);
 }
