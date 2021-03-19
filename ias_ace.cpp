@@ -320,10 +320,12 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, uint8_t cmd)
     stream << (quint8) 0x00; // Alarm status
 
     // ZCL frame
-    task.req.asdu().clear(); // cleanup old request data if there is any
-    QDataStream stream(&task.req.asdu(), QIODevice::WriteOnly);
-    stream.setByteOrder(QDataStream::LittleEndian);
-    task.zclFrame.writeToStream(stream);
+    {
+        task.req.asdu().clear(); // cleanup old request data if there is any
+        QDataStream stream(&task.req.asdu(), QIODevice::WriteOnly);
+        stream.setByteOrder(QDataStream::LittleEndian);
+        task.zclFrame.writeToStream(stream);
+    }
 
 
     return addTask(task);
