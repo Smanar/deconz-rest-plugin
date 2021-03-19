@@ -68,6 +68,7 @@ extern const char *RStateCarbonMonoxide;
 extern const char *RStateColorMode;
 extern const char *RStateConsumption;
 extern const char *RStateCurrent;
+extern const char *RStateAction;
 extern const char *RStateCt;
 extern const char *RStateDark;
 extern const char *RStateDaylight;

@@ -44,6 +44,14 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
     {
         return;
     }
+    
+    Sensor *sensorNode = getSensorNodeForAddressAndEndpoint(ind.srcAddress(), ind.srcEndpoint());
+    if (!sensorNode)
+    {
+        return;
+    }
+    
+    bool stateUpdated = false;
 
     if (zclFrame.commandId() == CMD_ARM)
     {
@@ -53,6 +61,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         quint8 armMode;
         quint16 length = zclFrame.payload().size() - 2;
         QString code;
+        QString armcommand;
         quint8 zoneId;
         quint8 codeTemp;
         
@@ -67,6 +76,12 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
 
         //Arm Mode
         stream >> armMode;
+        
+        if (armMode == 0x00) { armcommand =  QString("disarm"); }
+        else if (armMode == 0x01) { armcommand =  QString("arm_day"); }
+        else if (armMode == 0x02) { armcommand =  QString("arm_night"); }
+        else if (armMode == 0x03) { armcommand =  QString("arm"); }
+        else { armcommand =  QString("unknow"); }
         
         if (length > 1)
         {
@@ -88,6 +103,20 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         stream >> zoneId;
         
         DBG_Printf(DBG_INFO, "Debug Keypad : Arm command, Arm mode: %d, code: %s, Zone id: %d\n", armMode , qPrintable(code) ,zoneId);
+        
+        if (!code.isEmpty())
+        {
+            ResourceItem *item = sensorNode->item(RStateAction);
+
+            if (item )
+            {
+                QString action = QString("%1,%2,%3").arg(armcommand).arg(code).arg(zclFrame.sequenceNumber());
+                item->setValue(action);
+                Event e(RSensors, RStateAction, sensorNode->id(), item);
+                enqueueEvent(e);
+                stateUpdated = true;
+            }
+        }
 
         if (armMode <= 3)
         {
@@ -121,6 +150,15 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
     }
     else if (zclFrame.commandId() == CMD_GET_ZONE_STATUS)
     {
+    }
+    
+    if (stateUpdated)
+    {
+        sensorNode->updateStateTimestamp();
+        enqueueEvent(Event(RSensors, RStateLastUpdated, sensorNode->id()));
+        updateSensorEtag(&*sensorNode);
+        sensorNode->setNeedSaveDatabase(true);
+        queSaveDb(DB_SENSORS, DB_SHORT_SAVE_DELAY);
     }
 
     if (!(zclFrame.frameControl() & deCONZ::ZclFCDisableDefaultResponse))
@@ -255,4 +293,39 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
     {
         DBG_Printf(DBG_INFO_L2, "[IAS ACE] - Failed to send IAS ACE get panel reponse.\n");
     }
+}
+
+bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, uint8_t cmd)
+{
+    task.taskType = TaskIASACE;
+
+    task.req.setClusterId(IAS_ACE_CLUSTER_ID);
+    task.req.setProfileId(HA_PROFILE_ID);
+
+    task.zclFrame.payload().clear();
+    task.zclFrame.setSequenceNumber(zclSeq++);
+    task.zclFrame.setCommandId(CMD_PANEL_STATUS_CHANGED);
+    task.zclFrame.setFrameControl(deCONZ::ZclFCClusterCommand |
+                                  deCONZ::ZclFCDirectionClientToServer |
+                                  deCONZ::ZclFCDisableDefaultResponse);
+
+    { // payload
+        QDataStream stream(&task.zclFrame.payload(), QIODevice::WriteOnly);
+        stream.setByteOrder(QDataStream::LittleEndian);
+    }
+    
+    //data
+    stream << static_cast<quint8>(cmd);
+    stream << (quint8) 0x00; // Seconds Remaining
+    stream << (quint8) 0x00; // Audible Notification
+    stream << (quint8) 0x00; // Alarm status
+
+    { // ZCL frame
+        task.req.asdu().clear(); // cleanup old request data if there is any
+        QDataStream stream(&task.req.asdu(), QIODevice::WriteOnly);
+        stream.setByteOrder(QDataStream::LittleEndian);
+        task.zclFrame.writeToStream(stream);
+    }
+
+    return addTask(task);
 }
