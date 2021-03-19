@@ -87,7 +87,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         //Zone ID
         stream >> zoneId;
         
-        DBG_Printf(DBG_INFO, "Debug Keypad : Arm command, Arm mode %d, code %s, Zone id%d\n", armMode , qPrintable(code) ,zoneId);
+        DBG_Printf(DBG_INFO, "Debug Keypad : Arm command, Arm mode: %d, code: %s, Zone id: %d\n", armMode , qPrintable(code) ,zoneId);
 
         if (armMode <= 3)
         {
