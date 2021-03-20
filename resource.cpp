@@ -537,6 +537,7 @@ const QString R_GetProductId(Resource *resource)
 {
     DBG_Assert(resource);
 
+    DBG_Printf(DBG_INFO, "siren debug 4");
 
     if (!resource)
     {
@@ -557,13 +558,17 @@ const QString R_GetProductId(Resource *resource)
     {
         return rInvalidString;
     }
+    
+    DBG_Printf(DBG_INFO, "siren debug 3");
 
     if (isTuyaManufacturerName(manufacturerName->toString()))
     {
+        DBG_Printf(DBG_INFO, "siren debug 5");
         // for Tuya devices match against manufacturer name
         const auto productIdStr = productIdForManufacturerName(manufacturerName->toString(), products);
         if (productIdStr.size() > 0)
         {
+            DBG_Printf(DBG_INFO, "siren debug 6");
             productId = resource->addItem(DataTypeString, RAttrProductId);
             DBG_Assert(productId);
             productId->setValue(QString(productIdStr));

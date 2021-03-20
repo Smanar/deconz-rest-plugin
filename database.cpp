@@ -3366,14 +3366,17 @@ static int sqliteLoadAllSensorsCallback(void *user, int ncols, char **colval , c
             }
             item = sensor.addItem(DataTypeBool, RStateAlarm);
             item->setValue(false);
-
+            
+            DBG_Printf(DBG_INFO, "siren debug 1 : %s\n",qPrintable(R_GetProductId(&sensor)));
+            
             if (R_GetProductId(&sensor) == QLatin1String("NAS-AB02B0 Siren"))
             {
-                sensor.addItem(DataTypeUInt8, RConfigMelody);
-                sensor.addItem(DataTypeString, RConfigPreset);
-                sensor.addItem(DataTypeUInt8, RConfigVolume);
-                sensor.addItem(DataTypeString, RConfigTempThreshold);
-                sensor.addItem(DataTypeString, RConfigHumiThreshold);
+                DBG_Printf(DBG_INFO, "siren debug 2");
+                sensor.addItem(DataTypeUInt8, RConfigMelody);	
+                sensor.addItem(DataTypeString, RConfigPreset);	
+                sensor.addItem(DataTypeUInt8, RConfigVolume);	
+                sensor.addItem(DataTypeString, RConfigTempThreshold);	
+                sensor.addItem(DataTypeString, RConfigHumiThreshold);	
             }
 
         }
