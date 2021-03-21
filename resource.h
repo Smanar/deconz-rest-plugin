@@ -96,6 +96,7 @@ extern const char *RStateOpen;
 extern const char *RStateOrientationX;
 extern const char *RStateOrientationY;
 extern const char *RStateOrientationZ;
+extern const char *RStatePanel;
 extern const char *RStatePresence;
 extern const char *RStatePressure;
 extern const char *RStatePower;

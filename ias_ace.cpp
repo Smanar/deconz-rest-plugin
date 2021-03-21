@@ -26,8 +26,12 @@
 #define CMD_GET_BYPASSED_ZONE_LIST 0x08
 #define CMD_GET_ZONE_STATUS 0x09
 
-// 02 04 31 31 31 31 00
-// size = 7
+
+const QStringList PanelStatus({
+    "disarmed","armed_stay","armed_night","armed_away","exit_delay","entry_delay","not_ready_to_arm","in_alarm","arming_stay","arming_night","arming_away"
+});
+
+
 void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame)
 {
     if (zclFrame.isDefaultResponse())
@@ -275,8 +279,15 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
         // 0x00 Mute (i.e., no audible notification)
         // 0x01 Default sound
         // 0x80-0xff Manufacturer specific
+        
+        quint8 PanelStatus = 0x00;
+        ResourceItem *item = sensorNode->item(RStatePanel);
+        if (item && !item->toString().isEmpty())
+        {
+            PanelStatus = PanelStatus.indexOf(item->toString());
+        }
 
-        stream << (quint8) 0x00; // Panel status
+        stream << (quint8) PanelStatus; // Panel status
         stream << (quint8) 0x00; // Seconds Remaining
         stream << (quint8) 0x00; // Audible Notification
         stream << (quint8) 0x00; // Alarm status
