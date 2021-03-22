@@ -281,10 +281,16 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
         // 0x80-0xff Manufacturer specific
         
         quint8 PanelStatus = 0x00;
-        ResourceItem *item = sensorNode->item(RStatePanel);
-        if (item && !item->toString().isEmpty())
+        
+        
+        Sensor *sensorNode = getSensorNodeForAddressAndEndpoint(ind.srcAddress(), ind.srcEndpoint());
+        if (sensorNode)
         {
-            PanelStatus = PanelStatus.indexOf(item->toString());
+            ResourceItem *item = sensorNode->item(RStatePanel);
+            if (item && !item->toString().isEmpty())
+            {
+                PanelStatus = PanelStatus.indexOf(item->toString());
+            }
         }
 
         stream << (quint8) PanelStatus; // Panel status
