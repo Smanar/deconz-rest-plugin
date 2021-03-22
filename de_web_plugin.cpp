@@ -964,10 +964,6 @@ void DeRestPluginPrivate::apsdeDataIndication(const deCONZ::ApsDataIndication &i
             handleIasAceClusterIndication(ind, zclFrame);
             break;
 
-        case IAS_ACE_CLUSTER_ID:
-            handleIasAceClusterIndication(ind, zclFrame);
-            break;
-
         case VENDOR_CLUSTER_ID:
         // case DE_CLUSTER_ID:
             if (zclFrame.manufacturerCode() == VENDOR_PHILIPS)
