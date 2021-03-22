@@ -27,7 +27,7 @@
 #define CMD_GET_ZONE_STATUS 0x09
 
 
-const QStringList PanelStatus({
+const QStringList PanelStatusList({
     "disarmed","armed_stay","armed_night","armed_away","exit_delay","entry_delay","not_ready_to_arm","in_alarm","arming_stay","arming_night","arming_away"
 });
 
@@ -289,7 +289,7 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
             ResourceItem *item = sensorNode->item(RStatePanel);
             if (item && !item->toString().isEmpty())
             {
-                PanelStatus = PanelStatus.indexOf(item->toString());
+                PanelStatus = PanelStatusList.indexOf(item->toString());
             }
         }
 
