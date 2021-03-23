@@ -133,6 +133,7 @@ SOURCES  = air_quality.cpp \
            de_web_plugin.cpp \
            de_web_widget.cpp \
            de_otau.cpp \
+           doorlock.cpp \
            event.cpp \
            event_queue.cpp \
            fan_control.cpp \
