@@ -823,8 +823,8 @@ enum TaskType
     TaskDoorUnlock = 39,
     TaskSyncTime = 40,
     TaskTuyaRequest = 41,
-    TaskIASACE = 41,
-    TaskXmasLightStrip = 42
+    TaskXmasLightStrip = 42,
+    TaskIASACE = 43
 };
 
 enum XmasLightStripMode

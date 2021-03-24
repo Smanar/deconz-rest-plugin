@@ -60,8 +60,6 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
     if (zclFrame.commandId() == CMD_ARM)
     {
         
-        DBG_Printf(DBG_INFO, "Debug Keypad : Arm command, size %d\n",zclFrame.payload().size());
-        
         quint8 armMode;
         quint16 length = zclFrame.payload().size() - 2;
         QString code;
