@@ -821,7 +821,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                             if (item->setValue(val))
                             {
                                 
-                                ResourceItem item2 = sensor->item(RStatePanel);
+                                ResourceItem *item2 = sensor->item(RStatePanel);
                                 item2->setValue(mode);
                                 
                                 rspItemState[QString("/sensors/%1/config/armed").arg(id)] = map["armed"];
