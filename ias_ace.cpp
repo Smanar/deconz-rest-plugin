@@ -144,7 +144,6 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
     }
     else if (zclFrame.commandId() == CMD_GET_PANEL_STATUS)
     {
-        DBG_Printf(DBG_INFO, "Debug Keypad : Sending answer\n");
         sendGetPanelStatusResponse(ind, zclFrame);
     }
     else if (zclFrame.commandId() == CMD_GET_BYPASSED_ZONE_LIST)
@@ -278,8 +277,7 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
         // 0x01 Default sound
         // 0x80-0xff Manufacturer specific
         
-        quint8 PanelStatus = 0x00;
-        
+        quint8 PanelStatus = 0xff;
         
         Sensor *sensorNode = getSensorNodeForAddressAndEndpoint(ind.srcAddress(), ind.srcEndpoint());
         if (sensorNode)
@@ -289,6 +287,12 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
             {
                 PanelStatus = PanelStatusList.indexOf(item->toString());
             }
+        }
+        
+        if (PanelStatus == 0xff)
+        {
+            PanelStatus = 0x00;
+            DBG_Printf(DBG_INFO, "Debug Keypad, error, can't get PanelStatus");
         }
 
         stream << (quint8) PanelStatus; // Panel status
@@ -310,7 +314,7 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
     }
 }
 
-bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, uint8_t cmd)
+bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, const QString &mode)
 {
     task.taskType = TaskIASACE;
 
@@ -329,7 +333,11 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, uint8_t cmd)
 
     
     //data
-    stream << static_cast<quint8>(cmd);
+    
+    quint8 PanelStatus = PanelStatusList.indexOf(mode);
+
+    
+    stream << (quint8) PanelStatus;
     stream << (quint8) 0x00; // Seconds Remaining
     stream << (quint8) 0x00; // Audible Notification
     stream << (quint8) 0x00; // Alarm status

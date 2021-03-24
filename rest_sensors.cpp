@@ -807,18 +807,23 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                     item = sensor->item(RConfigArmed);
                     if (item)
                     {
+                        QString mode;
                         if (val)
                         {
-                            ok = addTaskPanelStatusChanged(task, 0x03 /*Arm*/);
+                            mode = QString("armed_away");
                         }
                         else
                         {
-                            ok = addTaskPanelStatusChanged(task, 0x00 /*Disarm*/);
+                            mode = QString("disarmed");
                         }
-                        if (ok)
+                        if (addTaskPanelStatusChanged(task, mode))
                         {
                             if (item->setValue(val))
                             {
+                                
+                                ResourceItem item2 = sensor->item(RStatePanel);
+                                item2->setValue(mode);
+                                
                                 rspItemState[QString("/sensors/%1/config/armed").arg(id)] = map["armed"];
                                 rspItem["success"] = rspItemState;
                                 if (item->lastChanged() == item->lastSet())

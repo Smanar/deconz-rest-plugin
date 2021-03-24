@@ -431,6 +431,25 @@ void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIn
  */
 void DeRestPluginPrivate::processIasZoneStatus(Sensor *sensor, quint16 zoneStatus, NodeValue::UpdateType updateType)
 {
+    ResourceItem *item2;
+    
+    // Valid for all devices type
+    item2 = sensor->item(RStateLowBattery);
+    if (item2)
+    {
+        bool battery = (zoneStatus & STATUS_BATTERY) ? true : false;
+        item2->setValue(battery);
+        enqueueEvent(Event(RSensors, RStateLowBattery, sensor->id(), item2));
+    }
+
+    item2 = sensor->item(RStateTampered);
+    if (item2)
+    {
+        bool tamper = (zoneStatus & STATUS_TAMPER) ? true : false;
+        item2->setValue(tamper);
+        enqueueEvent(Event(RSensors, RStateTampered, sensor->id(), item2));
+    }
+    
     const char *attr = nullptr;
     if (sensor->type() == QLatin1String("ZHAAlarm"))
     {
@@ -472,22 +491,6 @@ void DeRestPluginPrivate::processIasZoneStatus(Sensor *sensor, quint16 zoneStatu
         bool alarm = (zoneStatus & (STATUS_ALARM1 | STATUS_ALARM2)) ? true : false;
         item->setValue(alarm);
         enqueueEvent(Event(RSensors, item->descriptor().suffix, sensor->id(), item));
-
-        ResourceItem *item2 = sensor->item(RStateLowBattery);
-        if (item2)
-        {
-            bool battery = (zoneStatus & STATUS_BATTERY) ? true : false;
-            item2->setValue(battery);
-            enqueueEvent(Event(RSensors, RStateLowBattery, sensor->id(), item2));
-        }
-
-        item2 = sensor->item(RStateTampered);
-        if (item2)
-        {
-            bool tamper = (zoneStatus & STATUS_TAMPER) ? true : false;
-            item2->setValue(tamper);
-            enqueueEvent(Event(RSensors, RStateTampered, sensor->id(), item2));
-        }
 
         item2 = sensor->item(RStateTest);
         if (item2)
