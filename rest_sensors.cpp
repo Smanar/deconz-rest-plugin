@@ -802,7 +802,6 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                 else if (rid.suffix == RConfigArmed)
                 {
                     bool val = map[pi.key()].toBool();
-                    bool ok = false;
                     
                     item = sensor->item(RConfigArmed);
                     if (item)
