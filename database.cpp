@@ -3187,6 +3187,7 @@ static int sqliteLoadAllSensorsCallback(void *user, int ncols, char **colval , c
             {
                 sensor.addItem(DataTypeBool, RConfigArmed);
                 sensor.addItem(DataTypeString, RStateAction);
+                sensor.addItem(DataTypeString, RStatePanel);
             }
         }
         else if (sensor.type().endsWith(QLatin1String("LightLevel")))
