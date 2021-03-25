@@ -799,29 +799,20 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                 else if (rid.suffix == RConfigTempThreshold || rid.suffix == RConfigHumiThreshold)
                 {
                 }
-                else if (rid.suffix == RConfigArmed)
+                else if (rid.suffix == RConfigArmed && map[pi.key()].type() == QVariant::String)
                 {
-                    bool val = map[pi.key()].toBool();
+                    QString modeArmed = map[pi.key()].toString();
                     
                     item = sensor->item(RConfigArmed);
-                    if (item)
+                    if (item && item != modeArmed)
                     {
-                        QString mode;
-                        if (val)
-                        {
-                            mode = QString("armed_away");
-                        }
-                        else
-                        {
-                            mode = QString("disarmed");
-                        }
-                        if (addTaskPanelStatusChanged(task, mode))
+                        if (addTaskPanelStatusChanged(task, modeArmed))
                         {
                             if (item->setValue(val))
                             {
                                 
                                 ResourceItem *item2 = sensor->item(RStatePanel);
-                                item2->setValue(mode);
+                                item2->setValue(modeArmed);
                                 
                                 rspItemState[QString("/sensors/%1/config/armed").arg(id)] = map["armed"];
                                 rspItem["success"] = rspItemState;

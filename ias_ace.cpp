@@ -79,11 +79,13 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         //Arm Mode
         stream >> armMode;
         
-        if (armMode == 0x00) { armcommand =  QString("disarm"); }
-        else if (armMode == 0x01) { armcommand =  QString("arm_day"); }
-        else if (armMode == 0x02) { armcommand =  QString("arm_night"); }
-        else if (armMode == 0x03) { armcommand =  QString("arm"); }
-        else { armcommand =  QString("unknow"); }
+        if (armMode > PanelStatusList.size()) {
+            armcommand =  QString("unknow");
+        }
+        else
+        {
+            armcommand =  PanelStatusList[armMode];
+        }
         
         if (length > 1)
         {
@@ -120,10 +122,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
             }
         }
 
-        if (armMode <= 3)
-        {
-            sendArmResponse(ind, zclFrame, armMode);
-        }
+        sendArmResponse(ind, zclFrame, armMode);
 
         return;
     }
@@ -170,21 +169,9 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
 
 void DeRestPluginPrivate::sendArmResponse(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame, quint8 armMode)
 {
-    quint8 armNotification = 0xFF;
-
-    if (armMode <= 3)
+    //Not supported ?
+    if ( armMode > 0x0A)
     {
-        // 0: All zones disarmed, 1: Only day/home zones armed, 2: Only night/sleep zones armed, 3: All zones armed
-        armNotification = armMode;
-    }
-    else if (armMode > 3 && armMode <= 6)
-    {
-        // 4 - 6 not supported
-        return;
-    }
-    else
-    {
-        // invalid
         return;
     }
 
@@ -209,7 +196,7 @@ void DeRestPluginPrivate::sendArmResponse(const deCONZ::ApsDataIndication &ind, 
         QDataStream stream(&outZclFrame.payload(), QIODevice::WriteOnly);
         stream.setByteOrder(QDataStream::LittleEndian);
 
-        stream << armNotification;
+        stream << armMode;
     }
 
     { // ZCL frame
@@ -330,14 +317,18 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, const QStrin
      // payload
     QDataStream stream(&task.zclFrame.payload(), QIODevice::WriteOnly);
     stream.setByteOrder(QDataStream::LittleEndian);
-
     
     //data
     
-    quint8 PanelStatus = PanelStatusList.indexOf(mode);
-
+    int PanelStatus = PanelStatusList.indexOf(mode);
     
-    stream << (quint8) PanelStatus;
+    //Unknow mode ?
+    if (PanelStatus < 0)
+    {
+        return false;
+    }
+    
+    stream << static_cast<quint8>(PanelStatus);
     stream << (quint8) 0x00; // Seconds Remaining
     stream << (quint8) 0x00; // Audible Notification
     stream << (quint8) 0x00; // Alarm status

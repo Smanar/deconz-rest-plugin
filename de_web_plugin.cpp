@@ -6358,7 +6358,7 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const SensorFi
         }
         else if (modelId == QLatin1String("URC4450BC0-X-R"))
         {
-            sensorNode.addItem(DataTypeBool, RConfigArmed);
+            sensorNode.addItem(DataTypeString, RConfigArmed);
             sensorNode.addItem(DataTypeString, RStateAction);
             sensorNode.addItem(DataTypeString, RStatePanel);
         }

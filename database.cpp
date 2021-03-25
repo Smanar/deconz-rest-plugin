@@ -3185,7 +3185,7 @@ static int sqliteLoadAllSensorsCallback(void *user, int ncols, char **colval , c
             }
             else if (sensor.modelId() == QLatin1String("URC4450BC0-X-R"))
             {
-                sensor.addItem(DataTypeBool, RConfigArmed);
+                sensor.addItem(DataTypeString, RConfigArmed);
                 sensor.addItem(DataTypeString, RStateAction);
                 sensor.addItem(DataTypeString, RStatePanel);
             }
