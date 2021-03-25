@@ -26,7 +26,7 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
             //auto *sensor = getSensorNodeForAddressAndEndpoint(ind.srcAddress(), 0x01);
             
             QDataStream stream(zclFrame.payload());
-            stream.setByteOrder(QDataStream::LittleEndian
+            stream.setByteOrder(QDataStream::LittleEndian):
 
             quint8 source;
             quint8 code;
