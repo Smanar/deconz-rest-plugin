@@ -842,7 +842,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                     QString modeArmed = map[pi.key()].toString();
                     
                     item = sensor->item(RConfigArmed);
-                    if (item && item != modeArmed)
+                    if (item && item->toString() != modeArmed)
                     {
                         if (addTaskPanelStatusChanged(task, modeArmed))
                         {
