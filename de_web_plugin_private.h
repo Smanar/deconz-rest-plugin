@@ -273,6 +273,16 @@ using namespace deCONZ::literals;
 #define IAS_STATE_WAIT_ENROLL          8
 #define IAS_STATE_MAX                  9 // invalid
 
+// Develco interface modes, manufacturer specific
+#define PULSE_COUNTING_ELECTRICITY      0x0000
+#define PULSE_COUNTING_GAS              0x0001
+#define PULSE_COUNTING_WATER            0x0002
+#define KAMSTRUP_KMP                    0x0100
+#define LINKY                           0x0101
+#define DLMS_COSEM                      0x0102
+#define DSMR_23                         0x0103
+#define DSMR_40                         0x0104
+
 #ifndef DBG_IAS
   #define DBG_IAS DBG_INFO  // DBG_IAS didn't exist before version v2.10.x
 #endif
@@ -470,6 +480,7 @@ using namespace deCONZ::literals;
 #define J2000_EPOCH 1
 
 void getTime(quint32 *time, qint32 *tz, quint32 *dstStart, quint32 *dstEnd, qint32 *dstShift, quint32 *standardTime, quint32 *localTime, quint8 mode);
+int getFreeSensorId(); // TODO needs to be part of a Database class
 
 extern const quint64 macPrefixMask;
 
@@ -825,7 +836,8 @@ enum TaskType
     TaskDoorUnlock = 39,
     TaskSyncTime = 40,
     TaskTuyaRequest = 41,
-    TaskXmasLightStrip = 42
+    TaskXmasLightStrip = 42,
+    TaskSimpleMetering = 43
 };
 
 enum XmasLightStripMode
@@ -1034,6 +1046,8 @@ public:
 
     DeRestPluginPrivate(QObject *parent = 0);
     ~DeRestPluginPrivate();
+
+    static DeRestPluginPrivate *instance();
 
     // REST API authorisation
     void initAuthentication();
@@ -1520,6 +1534,7 @@ public:
     bool addTaskSyncTime(Sensor *sensor);
     bool addTaskThermostatUiConfigurationReadWriteAttribute(TaskItem &task, uint8_t readOrWriteCmd, uint16_t attrId, uint8_t attrType, uint32_t attrValue, uint16_t mfrCode=0);
     bool addTaskFanControlReadWriteAttribute(TaskItem &task, uint8_t readOrWriteCmd, uint16_t attrId, uint8_t attrType, uint32_t attrValue, uint16_t mfrCode=0);
+    bool addTaskSimpleMeteringReadWriteAttribute(TaskItem &task, uint8_t readOrWriteCmd, uint16_t attrId, uint8_t attrType, uint32_t attrValue, uint16_t mfrCode=0);
 
     // Merry Christmas!
     bool isXmasLightStrip(LightNode *lightNode);
@@ -1583,6 +1598,7 @@ public:
     bool deserialiseThermostatTransitions(const QString &s, QVariantList *transitions);
     bool serialiseThermostatSchedule(const QVariantMap &schedule, QString *s);
     bool deserialiseThermostatSchedule(const QString &s, QVariantMap *schedule);
+    void handleSimpleMeteringClusterIndication(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame);
 
     // Modify node attributes
     void setAttributeOnOff(LightNode *lightNode);
@@ -1612,6 +1628,7 @@ public:
     void refreshDeviceDb(const deCONZ::Address &addr);
     void pushZdpDescriptorDb(quint64 extAddress, quint8 endpoint, quint16 type, const QByteArray &data);
     void pushZclValueDb(quint64 extAddress, quint8 endpoint, quint16 clusterId, quint16 attributeId, qint64 data);
+    bool dbIsOpen() const;
     void openDb();
     void readDb();
     void loadAuthFromDb();
@@ -1633,7 +1650,6 @@ public:
     void loadLightDataFromDb(LightNode *lightNode, QVariantList &ls, qint64 fromTime, int max);
     void loadAllGatewaysFromDb();
     int getFreeLightId();
-    int getFreeSensorId();
     void saveDb();
     void saveApiKey(QString apikey);
     void closeDb();
@@ -1644,13 +1660,11 @@ public:
 
     void checkConsistency();
 
-    sqlite3 *db;
     int ttlDataBaseConnection; // when idleTotalCounter becomes greater the DB will be closed
     int saveDatabaseItems;
     int saveDatabaseIdleTotalCounter;
     QString sqliteDatabaseName;
     std::vector<int> lightIds;
-    std::vector<int> sensorIds;
     std::vector<QString> dbQueryQueue;
     qint64 dbZclValueMaxAge;
     QTimer *databaseTimer;
