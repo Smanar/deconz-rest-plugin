@@ -3190,12 +3190,15 @@ static int sqliteLoadAllSensorsCallback(void *user, int ncols, char **colval , c
                 sensor.addItem(DataTypeUInt16, RStateY);
                 sensor.addItem(DataTypeUInt16, RStateAngle);
             }
-            else if (sensor.modelId() == QLatin1String("URC4450BC0-X-R"))
-            {
-                sensor.addItem(DataTypeString, RConfigArmed);
-                sensor.addItem(DataTypeString, RStateAction);
-                sensor.addItem(DataTypeString, RStatePanel);
-            }
+        }
+        else if (sensor.type().endsWith(QLatin1String("AncillaryControlSensor")))
+        {
+            clusterId = IAS_ACE_CLUSTER_ID;
+            sensor.addItem(DataTypeString, RConfigArmed);
+            sensor.addItem(DataTypeString, RStateAction);
+            sensor.addItem(DataTypeString, RStatePanel);
+            item = sensor.addItem(DataTypeBool, RStateTampered);
+            item->setValue(false);
         }
         else if (sensor.type().endsWith(QLatin1String("LightLevel")))
         {

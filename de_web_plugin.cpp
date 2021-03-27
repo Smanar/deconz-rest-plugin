@@ -5032,6 +5032,7 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
         SensorFingerprint fpVibrationSensor;
         SensorFingerprint fpWaterSensor;
         SensorFingerprint fpDoorLockSensor;
+        SensorFingerprint fpAncillaryControlSensor;
 
         {   // scan server clusters of endpoint
             QList<deCONZ::ZclCluster>::const_iterator ci = i->inClusters().constBegin();
@@ -5280,6 +5281,11 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
                     if (manufacturer.endsWith(QLatin1String("0yu2xgi")))
                     {
                     }
+                    // Use IAS_ACE_CLUSTER_ID instead
+                    else if (modelId == QLatin1String("URC4450BC0-X-R"))
+                    {
+                        fpAncillaryControlSensor.inClusters.push_back(ci->id());
+                    }
                     else if (modelId.startsWith(QLatin1String("CO_")) ||                   // Heiman CO sensor
                         modelId.startsWith(QLatin1String("COSensor")) ||              // Heiman CO sensor (newer model)
                         modelId.startsWith(QLatin1String("lumi.sensor_natgas")))      // Xiaomi Mi gas detector
@@ -5377,7 +5383,6 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
                     }
                     else if ((manufacturer == QLatin1String("Samjin") && modelId == QLatin1String("button")) ||
                               modelId == QLatin1String("Keyfob-ZB3.0") ||
-                              modelId == QLatin1String("URC4450BC0-X-R") ||
                               modelId == QLatin1String("TS0211"))
                     {
                         fpSwitch.inClusters.push_back(ci->id());
@@ -5854,10 +5859,13 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
                         modelId == QLatin1String("TS0215") ||
                         modelId == QLatin1String("RC_V14") ||
                         modelId == QLatin1String("RC-EM") ||
-                        modelId == QLatin1String("URC4450BC0-X-R") ||
                         modelId == QLatin1String("RC-EF-3.0"))
                     {
                         fpSwitch.outClusters.push_back(ci->id());
+                    }
+                    if (modelId == QLatin1String("URC4450BC0-X-R"))
+                    {
+                        fpAncillaryControlSensor.outClusters.push_back(ci->id());
                     }
                 }
                     break;
@@ -5947,6 +5955,25 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
             else
             {
                 checkSensorNodeReachable(sensor);
+            }
+        }
+        
+        //ZHAAncillaryControlSensor
+        if (fpAncillaryControlSensor.hasOutCluster(IAS_ACE_CLUSTER_ID))
+        {
+            fpAncillaryControlSensor.endpoint = i->endpoint();
+            fpAncillaryControlSensor.deviceId = i->deviceId();
+            fpAncillaryControlSensor.profileId = i->profileId();
+
+            sensor = getSensorNodeForFingerPrint(node->address().ext(), fpAncillaryControlSensor, "ZHAAncillaryControlSensor");
+            if (!sensor || sensor->deletedState() != Sensor::StateNormal)
+            {
+                addSensorNode(node, fpAncillaryControlSensor, "ZHAAncillaryControlSensor", modelId, manufacturer);
+            }
+            else
+            {
+                checkSensorNodeReachable(sensor);
+                checkIasEnrollmentStatus(sensor);
             }
         }
 
@@ -6456,12 +6483,15 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const SensorFi
             sensorNode.addItem(DataTypeUInt16, RStateY);
             sensorNode.addItem(DataTypeUInt16, RStateAngle);
         }
-        else if (modelId == QLatin1String("URC4450BC0-X-R"))
-        {
-            sensorNode.addItem(DataTypeString, RConfigArmed);
-            sensorNode.addItem(DataTypeString, RStateAction);
-            sensorNode.addItem(DataTypeString, RStatePanel);
-        }
+    }
+    else if (sensorNode.type().endsWith(QLatin1String("AncillaryControlSensor")))
+    {
+        clusterId = IAS_ACE_CLUSTER_ID;
+        sensorNode.addItem(DataTypeString, RConfigArmed);
+        sensorNode.addItem(DataTypeString, RStateAction);
+        sensorNode.addItem(DataTypeString, RStatePanel);
+        item = sensorNode.addItem(DataTypeBool, RStateTampered);
+        item->setValue(false);
     }
     else if (sensorNode.type().endsWith(QLatin1String("LightLevel")))
     {
