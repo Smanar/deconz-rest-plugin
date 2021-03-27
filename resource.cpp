@@ -55,6 +55,7 @@ const char *RStateColorMode = "state/colormode";
 const char *RStateConsumption = "state/consumption";
 const char *RStateCurrent = "state/current";
 const char *RStateCt = "state/ct";
+const char *RStateAction = "state/action";
 const char *RStateDark = "state/dark";
 const char *RStateDaylight = "state/daylight";
 const char *RStateEffect = "state/effect";
@@ -82,6 +83,7 @@ const char *RStateOpen = "state/open";
 const char *RStateOrientationX = "state/orientation_x";
 const char *RStateOrientationY = "state/orientation_y";
 const char *RStateOrientationZ = "state/orientation_z";
+const char *RStatePanel = "state/panel";
 const char *RStatePresence = "state/presence";
 const char *RStatePressure = "state/pressure";
 const char *RStatePower = "state/power";
@@ -116,6 +118,7 @@ const QStringList RStateEffectValuesMueller({
     "none", "colorloop", "sunset", "party", "worklight", "campfire", "romance", "nightlight"
 });
 
+const char *RConfigArmed = "config/armed";
 const char *RConfigAlert = "config/alert";
 const char *RConfigLock = "config/lock";
 const char *RConfigBattery = "config/battery";
@@ -237,6 +240,7 @@ void initResourceDescriptors()
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeInt32, RStateButtonEvent));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeBool, RStateCarbonMonoxide));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeString, RStateColorMode));
+    rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeString, RStateAction));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt64, RStateConsumption));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt16, RStateCurrent));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt16, RStateCt));
@@ -272,6 +276,7 @@ void initResourceDescriptors()
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeBool, RStateReachable));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt8, RStateSat));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeString, RActionScene));
+    rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeString, RStatePanel));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt16, RStateSpectralX));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt16, RStateSpectralY));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt16, RStateSpectralZ));
@@ -320,6 +325,7 @@ void initResourceDescriptors()
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeBool, RConfigLedIndication));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeTime, RConfigLocalTime));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeBool, RConfigLocked));
+    rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeString, RConfigArmed));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeBool, RConfigSetValve));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeString, RConfigLong));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt8, RConfigLevelMin));

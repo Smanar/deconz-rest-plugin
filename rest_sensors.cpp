@@ -837,6 +837,37 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                         return REQ_READY_SEND;
                     }
                 }
+                else if (rid.suffix == RConfigArmed && map[pi.key()].type() == QVariant::String)
+                {
+                    QString modeArmed = map[pi.key()].toString();
+                    
+                    item = sensor->item(RConfigArmed);
+                    if (item && item != modeArmed)
+                    {
+                        if (addTaskPanelStatusChanged(task, modeArmed))
+                        {
+                            if (item->setValue(val))
+                            {
+                                
+                                ResourceItem *item2 = sensor->item(RStatePanel);
+                                item2->setValue(modeArmed);
+                                
+                                rspItemState[QString("/sensors/%1/config/armed").arg(id)] = map["armed"];
+                                rspItem["success"] = rspItemState;
+                                if (item->lastChanged() == item->lastSet())
+                                {
+                                    updated = true;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/armed").arg(id), QString("Command error, %1, for parameter, armed").arg(map[pi.key()].toString())));
+                            rsp.httpStatus = HttpStatusBadRequest;
+                            return REQ_READY_SEND;
+                        }
+                    }
+                }
                 else if (item->setValue(val))
                 {
                     // TODO: Fix bug

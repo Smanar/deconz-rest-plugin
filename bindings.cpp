@@ -2960,6 +2960,8 @@ bool DeRestPluginPrivate::checkSensorBindingsForAttributeReporting(Sensor *senso
         sensor->modelId() == QLatin1String("0x8035") ||
         // LIDL
         sensor->modelId() == QLatin1String("HG06323") ||
+        // Xfinity
+        sensor->modelId() == QLatin1String("URC4450BC0-X-R") ||
         // Eria
         sensor->modelId() == QLatin1String("Adurolight_NCC")
         )
@@ -3692,6 +3694,7 @@ bool DeRestPluginPrivate::checkSensorBindingsForClientClusters(Sensor *sensor)
     else if (sensor->modelId().startsWith(QLatin1String("TS0215")) ||
              sensor->modelId().startsWith(QLatin1String("RC_V14")) ||
              sensor->modelId().startsWith(QLatin1String("RC-EM")) ||
+             sensor->modelId().startsWith(QLatin1String("URC4450BC0-X-R")) ||
              sensor->modelId().startsWith(QLatin1String("RC-EF-3.0")))
     {
         clusters.push_back(IAS_ACE_CLUSTER_ID);
