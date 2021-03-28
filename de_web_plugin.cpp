@@ -5910,6 +5910,9 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
             fpSwitch.hasOutCluster(IAS_ACE_CLUSTER_ID) ||
             !fpSwitch.outClusters.empty())
         {
+            
+            DBG_Printf(DBG_INFO, "Debug Keypad 10 : %s\n",qPrintable(fpSwitch.toString()));
+            
             fpSwitch.endpoint = i->endpoint();
             fpSwitch.deviceId = i->deviceId();
             fpSwitch.profileId = i->profileId();
