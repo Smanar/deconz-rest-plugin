@@ -5964,6 +5964,9 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
         //ZHAAncillaryControlSensor
         if (fpAncillaryControlSensor.hasOutCluster(IAS_ACE_CLUSTER_ID))
         {
+            
+            DBG_Printf(DBG_INFO, "Debug Keypad 10 : yes\n");
+            
             fpAncillaryControlSensor.endpoint = i->endpoint();
             fpAncillaryControlSensor.deviceId = i->deviceId();
             fpAncillaryControlSensor.profileId = i->profileId();
