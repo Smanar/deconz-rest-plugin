@@ -16,7 +16,16 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
 {
     
     QString zclPayload = zclFrame.payload().isEmpty() ? "None" : qPrintable(zclFrame.payload().toHex().toUpper());
-    DBG_Printf(DBG_INFO, "Door lock debug 0x%016llX, command  0x%02X, payload \n", ind.srcAddress().ext(), zclFrame.commandId(), qPrintable(zclPayload) );
+    DBG_Printf(DBG_INFO, "Door lock debug 0x%016llX, command  0x%02X, payload %s\n", ind.srcAddress().ext(), zclFrame.commandId(), qPrintable(zclPayload) );
+    
+    if ( zclFrame.isClusterCommand())
+    {
+        DBG_Printf(DBG_INFO, "Door lock debug 77\n");
+    }
+    if ((zclFrame.frameControl() & deCONZ::ZclFCDirectionServerToClient) == 0)
+    {
+        DBG_Printf(DBG_INFO, "Door lock debug 78\n");
+    }
 
     if (zclFrame.commandId() == OPERATION_EVENT_NOTIFICATON &&
         zclFrame.isClusterCommand() &&
