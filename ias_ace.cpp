@@ -39,7 +39,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         return;
     }
     
-    DBG_Printf(DBG_INFO, "Debug Keypad : Address 0x%016llX Payload %s, command 0x%02X\n", ind.srcAddress().ext(), qPrintable(zclFrame.payload().toHex()), zclFrame.commandId());
+    DBG_Printf(DBG_IAS, "Debug Keypad : Address 0x%016llX Payload %s, command 0x%02X\n", ind.srcAddress().ext(), qPrintable(zclFrame.payload().toHex()), zclFrame.commandId());
 
     QDataStream stream(zclFrame.payload());
     stream.setByteOrder(QDataStream::LittleEndian);
@@ -106,7 +106,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         //Zone ID
         stream >> zoneId;
         
-        DBG_Printf(DBG_INFO, "Debug Keypad : Arm command, Arm mode: %d, code: %s, Zone id: %d\n", armMode , qPrintable(code) ,zoneId);
+        DBG_Printf(DBG_IAS, "Debug Keypad : Arm command, Arm mode: %d, code: %s, Zone id: %d\n", armMode , qPrintable(code) ,zoneId);
         
         if (!code.isEmpty())
         {
@@ -207,7 +207,7 @@ void DeRestPluginPrivate::sendArmResponse(const deCONZ::ApsDataIndication &ind, 
 
     if (apsCtrl && apsCtrl->apsdeDataRequest(req) != deCONZ::Success)
     {
-        DBG_Printf(DBG_INFO_L2, "[IAS ACE] - Failed to send IAS ACE arm reponse.\n");
+        DBG_Printf(DBG_IAS, "[IAS ACE] - Failed to send IAS ACE arm reponse.\n");
     }
 }
 
@@ -275,11 +275,15 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
                 PanelStatus = PanelStatusList.indexOf(item->toString());
             }
         }
+        else
+        {
+            DBG_Printf(DBG_IAS, "Debug Keypad, error, no sensor found");
+        }
         
         if (PanelStatus == 0xff)
         {
             PanelStatus = 0x00;
-            DBG_Printf(DBG_INFO, "Debug Keypad, error, can't get PanelStatus");
+            DBG_Printf(DBG_IAS, "Debug Keypad, error, can't get PanelStatus");
         }
 
         stream << (quint8) PanelStatus; // Panel status
@@ -297,7 +301,7 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
 
     if (apsCtrl && apsCtrl->apsdeDataRequest(req) != deCONZ::Success)
     {
-        DBG_Printf(DBG_INFO_L2, "[IAS ACE] - Failed to send IAS ACE get panel reponse.\n");
+        DBG_Printf(DBG_IAS, "[IAS ACE] - Failed to send IAS ACE get panel reponse.\n");
     }
 }
 
