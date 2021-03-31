@@ -3370,6 +3370,7 @@ static int sqliteLoadAllSensorsCallback(void *user, int ncols, char **colval , c
             clusterId = clusterId ? clusterId : DOOR_LOCK_CLUSTER_ID;
             
             sensor.addItem(DataTypeString, RStateLockState);
+            sensor.addItem(DataTypeString, RStateNotification);
             sensor.addItem(DataTypeBool, RConfigLock);
         }
         else if (sensor.type().endsWith(QLatin1String("Alarm")))

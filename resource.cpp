@@ -63,6 +63,7 @@ const char *RStateEventDuration = "state/eventduration";
 const char *RStateFire = "state/fire";
 const char *RStateFlag = "state/flag";
 const char *RStateLockState = "state/lockstate";
+const char *RStateNotification = "state/notification";
 const char *RStateFloorTemperature = "state/floortemperature";
 const char *RStateGesture = "state/gesture";
 const char *RStateHeating = "state/heating";
@@ -229,6 +230,7 @@ void initResourceDescriptors()
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeBool, RStateAlarm));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeString, RStateAlert));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeString, RStateLockState));
+    rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeString, RStateNotification));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeBool, RStateAllOn));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt16, RStateAngle));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeBool, RStateAnyOn));

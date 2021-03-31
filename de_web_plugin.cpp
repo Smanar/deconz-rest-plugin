@@ -6560,6 +6560,7 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const SensorFi
         clusterId = DOOR_LOCK_CLUSTER_ID;
 
         sensorNode.addItem(DataTypeString, RStateLockState);
+        sensorNode.addItem(DataTypeString, RStateNotification);
         sensorNode.addItem(DataTypeBool, RConfigLock);
     }
     else if (sensorNode.type().endsWith(QLatin1String("Alarm")))
