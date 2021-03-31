@@ -22,14 +22,14 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
     {
         DBG_Printf(DBG_INFO, "Door lock debug 77\n");
     }
-    if ((zclFrame.frameControl() & deCONZ::ZclFCDirectionServerToClient) == 0)
+    if (zclFrame.frameControl() & deCONZ::ZclFCDirectionServerToClient)
     {
         DBG_Printf(DBG_INFO, "Door lock debug 78\n");
     }
 
     if (zclFrame.commandId() == OPERATION_EVENT_NOTIFICATON &&
         zclFrame.isClusterCommand() &&
-        (zclFrame.frameControl() & deCONZ::ZclFCDirectionServerToClient) == 0)
+        (zclFrame.frameControl() & deCONZ::ZclFCDirectionServerToClient))
     {
         {
             //auto *sensor = getSensorNodeForAddressAndEndpoint(ind.srcAddress(), 0x01);
