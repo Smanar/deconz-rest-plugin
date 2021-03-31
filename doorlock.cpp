@@ -14,7 +14,7 @@
 
 const QStringList EventSourceList({"keypad","rf","manual","rfid"});
 const QStringList EventCodeList({
-    "unknown","lock","unlock","LockFailureInvalidPINorID","LockFailureInvalidSchedule","UnlockFailureInvalidPINorID","UnlockFailureInvalidSchedule","OneTouchLock","KeyLock",
+    "Unknown","Lock","Unlock","LockFailureInvalidPINorID","LockFailureInvalidSchedule","UnlockFailureInvalidPINorID","UnlockFailureInvalidSchedule","OneTouchLock","KeyLock",
     "KeyUnlock","AutoLock","ScheduleLock","ScheduleUnlock","Manual Lock","Manual Unlock","Non-Access User Operational Event"
     });
 
@@ -44,11 +44,13 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
 
             quint8 source;
             quint8 code;
-            quint16 pin;
+            quint16 userID;
+            quint8 pin;
             quint8 localtime;
             
             stream >> source;
             stream >> code;
+            stream >> userID;
             stream >> pin;
             stream >> localtime;
             
