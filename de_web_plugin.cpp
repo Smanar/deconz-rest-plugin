@@ -6493,7 +6493,7 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const SensorFi
         clusterId = IAS_ACE_CLUSTER_ID;
         sensorNode.addItem(DataTypeString, RConfigArmed);
         sensorNode.addItem(DataTypeString, RStateAction);
-        sensorNode.addItem(DataTypeString, RStatePanel)->setValue("disarmed");
+        sensorNode.addItem(DataTypeString, RStatePanel)->setValue(QString("disarmed"));
         sensorNode.addItem(DataTypeBool, RStateTampered)->setValue(false);
     }
     else if (sensorNode.type().endsWith(QLatin1String("LightLevel")))
