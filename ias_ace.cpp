@@ -26,6 +26,43 @@
 #define CMD_GET_BYPASSED_ZONE_LIST 0x08
 #define CMD_GET_ZONE_STATUS 0x09
 
+//  Arm mode
+//-------------    
+// 0x00 Disarm    
+// 0x01 Arm Day/Home Zones Only
+// 0x02 Arm Night/Sleep Zones Only
+// 0x03 Arm All Zones
+
+//   Panel status
+// --------------        
+// 0x00 Panel disarmed (all zones disarmed) and ready to arm
+// 0x01 Armed stay
+// 0x02 Armed night
+// 0x03 Armed away
+// 0x04 Exit delay
+// 0x05 Entry delay
+// 0x06 Not ready to arm
+// 0x07 In alarm
+// 0x08 Arming Stay
+// 0x09 Arming Night
+// 0x0a Arming Away
+
+// Alarm Status
+// ------------
+// 0x00 No alarm
+// 0x01 Burglar
+// 0x02 Fire
+// 0x03 Emergency
+// 0x04 Police Panic
+// 0x05 Fire Panic
+// 0x06 Emergency Panic (i.e., medical issue)
+
+// Audible Notification
+// ----------------------   
+// 0x00 Mute (i.e., no audible notification)
+// 0x01 Default sound
+// 0x80-0xff Manufacturer specific
+
 
 const QStringList PanelStatusList({
     "disarmed","armed_stay","armed_night","armed_away","exit_delay","entry_delay","not_ready_to_arm","in_alarm","arming_stay","arming_night","arming_away"
@@ -74,13 +111,6 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         quint8 codeTemp;
         
         quint8 dummy;
-
-        //  Arm mode
-        //-------------    
-        // 0x00 Disarm    
-        // 0x01 Arm Day/Home Zones Only
-        // 0x02 Arm Night/Sleep Zones Only
-        // 0x03 Arm All Zones
 
         //Arm Mode
         stream >> armMode;
@@ -148,7 +178,20 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
     }
     else if (zclFrame.commandId() == CMD_GET_PANEL_STATUS)
     {
-        sendGetPanelStatusResponse(ind, zclFrame);
+        quint8 PanelStatus;
+        
+        ResourceItem *item = sensorNode->item(RStatePanel);
+        if (item && !item->toString().isEmpty())
+        {
+            PanelStatus = PanelStatusList.indexOf(item->toString());
+        }
+        else
+        {
+            PanelStatus = 0x00;
+            DBG_Printf(DBG_IAS, "Debug Keypad, error, can't get PanelStatus");
+        }
+        
+        sendGetPanelStatusResponse(ind, zclFrame, PanelStatus);
     }
     else if (zclFrame.commandId() == CMD_GET_BYPASSED_ZONE_LIST)
     {
@@ -212,7 +255,7 @@ void DeRestPluginPrivate::sendArmResponse(const deCONZ::ApsDataIndication &ind, 
     }
 }
 
-void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame)
+void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame , quint8 PanelStatus;)
 {
 
     deCONZ::ApsDataRequest req;
@@ -234,58 +277,6 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
     { // payload
         QDataStream stream(&outZclFrame.payload(), QIODevice::WriteOnly);
         stream.setByteOrder(QDataStream::LittleEndian);
-
-        //   Panel status
-        // --------------        
-        // 0x00 Panel disarmed (all zones disarmed) and ready to arm
-        // 0x01 Armed stay
-        // 0x02 Armed night
-        // 0x03 Armed away
-        // 0x04 Exit delay
-        // 0x05 Entry delay
-        // 0x06 Not ready to arm
-        // 0x07 In alarm
-        // 0x08 Arming Stay
-        // 0x09 Arming Night
-        // 0x0a Arming Away
-        
-        // Alarm Status
-        // ------------
-        // 0x00 No alarm
-        // 0x01 Burglar
-        // 0x02 Fire
-        // 0x03 Emergency
-        // 0x04 Police Panic
-        // 0x05 Fire Panic
-        // 0x06 Emergency Panic (i.e., medical issue)
-        
-        // Audible Notification
-        // ----------------------   
-        // 0x00 Mute (i.e., no audible notification)
-        // 0x01 Default sound
-        // 0x80-0xff Manufacturer specific
-        
-        quint8 PanelStatus = 0xff;
-        
-        Sensor *sensorNode = getSensorNodeForAddressAndEndpoint(ind.srcAddress(), ind.srcEndpoint(), QLatin1String("ZHAAncillaryControlSensor"));
-        if (sensorNode)
-        {
-            ResourceItem *item = sensorNode->item(RStatePanel);
-            if (item && !item->toString().isEmpty())
-            {
-                PanelStatus = PanelStatusList.indexOf(item->toString());
-            }
-        }
-        else
-        {
-            DBG_Printf(DBG_IAS, "Debug Keypad, error, no sensor found");
-        }
-        
-        if (PanelStatus == 0xff)
-        {
-            PanelStatus = 0x00;
-            DBG_Printf(DBG_IAS, "Debug Keypad, error, can't get PanelStatus");
-        }
 
         stream << (quint8) PanelStatus; // Panel status
         stream << (quint8) 0x00; // Seconds Remaining
