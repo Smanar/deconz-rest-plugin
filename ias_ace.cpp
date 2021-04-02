@@ -255,7 +255,7 @@ void DeRestPluginPrivate::sendArmResponse(const deCONZ::ApsDataIndication &ind, 
     }
 }
 
-void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame , quint8 PanelStatus;)
+void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame , quint8 PanelStatus)
 {
 
     deCONZ::ApsDataRequest req;
