@@ -49,6 +49,12 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         return;
     }
     
+    //Defaut response
+    if (!(zclFrame.frameControl() & deCONZ::ZclFCDisableDefaultResponse))
+    {
+        sendZclDefaultResponse(ind, zclFrame, deCONZ::ZclSuccessStatus);
+    }
+    
     Sensor *sensorNode = getSensorNodeForAddressAndEndpoint(ind.srcAddress(), ind.srcEndpoint(), QLatin1String("ZHAAncillaryControlSensor"));
     if (!sensorNode)
     {
@@ -123,8 +129,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         }
 
         sendArmResponse(ind, zclFrame, armMode);
-
-        return;
+        
     }
     else if (zclFrame.commandId() == CMD_EMERGENCY)
     {
@@ -161,10 +166,6 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         queSaveDb(DB_SENSORS, DB_SHORT_SAVE_DELAY);
     }
 
-    if (!(zclFrame.frameControl() & deCONZ::ZclFCDisableDefaultResponse))
-    {
-        sendZclDefaultResponse(ind, zclFrame, deCONZ::ZclSuccessStatus);
-    }
 }
 
 void DeRestPluginPrivate::sendArmResponse(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame, quint8 armMode)
