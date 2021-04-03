@@ -5032,7 +5032,7 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
         SensorFingerprint fpVibrationSensor;
         SensorFingerprint fpWaterSensor;
         SensorFingerprint fpDoorLockSensor;
-        SensorFingerprint fpAncillaryControlSensor;
+        SensorFingerprint fpAncillaryControl;
 
         {   // scan server clusters of endpoint
             QList<deCONZ::ZclCluster>::const_iterator ci = i->inClusters().constBegin();
@@ -5284,7 +5284,7 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
                     // Use IAS_ACE_CLUSTER_ID instead
                     else if (modelId == QLatin1String("URC4450BC0-X-R"))
                     {
-                        fpAncillaryControlSensor.inClusters.push_back(ci->id());
+                        fpAncillaryControl.inClusters.push_back(ci->id());
                     }
                     else if (modelId.startsWith(QLatin1String("CO_")) ||                   // Heiman CO sensor
                         modelId.startsWith(QLatin1String("COSensor")) ||              // Heiman CO sensor (newer model)
@@ -5865,7 +5865,7 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
                     }
                     if (modelId == QLatin1String("URC4450BC0-X-R"))
                     {
-                        fpAncillaryControlSensor.outClusters.push_back(ci->id());
+                        fpAncillaryControl.outClusters.push_back(ci->id());
                     }
                 }
                     break;
@@ -5961,18 +5961,18 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
             }
         }
         
-        //ZHAAncillaryControlSensor
-        if (fpAncillaryControlSensor.hasOutCluster(IAS_ACE_CLUSTER_ID))
+        //ZHAAncillaryControl
+        if (fpAncillaryControl.hasOutCluster(IAS_ACE_CLUSTER_ID))
         {
             
-            fpAncillaryControlSensor.endpoint = i->endpoint();
-            fpAncillaryControlSensor.deviceId = i->deviceId();
-            fpAncillaryControlSensor.profileId = i->profileId();
+            fpAncillaryControl.endpoint = i->endpoint();
+            fpAncillaryControl.deviceId = i->deviceId();
+            fpAncillaryControl.profileId = i->profileId();
 
-            sensor = getSensorNodeForFingerPrint(node->address().ext(), fpAncillaryControlSensor, "ZHAAncillaryControlSensor");
+            sensor = getSensorNodeForFingerPrint(node->address().ext(), fpAncillaryControl, "ZHAAncillaryControl");
             if (!sensor || sensor->deletedState() != Sensor::StateNormal)
             {
-                addSensorNode(node, fpAncillaryControlSensor, "ZHAAncillaryControlSensor", modelId, manufacturer);
+                addSensorNode(node, fpAncillaryControl, "ZHAAncillaryControl", modelId, manufacturer);
             }
             else
             {
@@ -6488,7 +6488,7 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const SensorFi
             sensorNode.addItem(DataTypeUInt16, RStateAngle);
         }
     }
-    else if (sensorNode.type().endsWith(QLatin1String("AncillaryControlSensor")))
+    else if (sensorNode.type().endsWith(QLatin1String("AncillaryControl")))
     {
         clusterId = IAS_ACE_CLUSTER_ID;
         sensorNode.addItem(DataTypeString, RConfigArmed);

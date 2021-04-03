@@ -92,7 +92,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         sendZclDefaultResponse(ind, zclFrame, deCONZ::ZclSuccessStatus);
     }
     
-    Sensor *sensorNode = getSensorNodeForAddressAndEndpoint(ind.srcAddress(), ind.srcEndpoint(), QLatin1String("ZHAAncillaryControlSensor"));
+    Sensor *sensorNode = getSensorNodeForAddressAndEndpoint(ind.srcAddress(), ind.srcEndpoint(), QLatin1String("ZHAAncillaryControl"));
     if (!sensorNode)
     {
         return;

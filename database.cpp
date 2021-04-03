@@ -3191,7 +3191,7 @@ static int sqliteLoadAllSensorsCallback(void *user, int ncols, char **colval , c
                 sensor.addItem(DataTypeUInt16, RStateAngle);
             }
         }
-        else if (sensor.type().endsWith(QLatin1String("AncillaryControlSensor")))
+        else if (sensor.type().endsWith(QLatin1String("AncillaryControl")))
         {
             clusterId = IAS_ACE_CLUSTER_ID;
             sensor.addItem(DataTypeString, RConfigArmed);
