@@ -76,7 +76,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         return;
     }
     
-    DBG_Printf(DBG_IAS, "Debug Keypad : Address 0x%016llX Payload %s, command 0x%02X\n", ind.srcAddress().ext(), qPrintable(zclFrame.payload().toHex()), zclFrame.commandId());
+    DBG_Printf(DBG_IAS, "[IAS ACE] - Address 0x%016llX, Payload %s, Command 0x%02X\n", ind.srcAddress().ext(), qPrintable(zclFrame.payload().toHex()), zclFrame.commandId());
 
     QDataStream stream(zclFrame.payload());
     stream.setByteOrder(QDataStream::LittleEndian);
@@ -142,7 +142,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         //Zone ID
         stream >> zoneId;
         
-        DBG_Printf(DBG_IAS, "Debug Keypad : Arm command, Arm mode: %d, code: %s, Zone id: %d\n", armMode , qPrintable(code) ,zoneId);
+        DBG_Printf(DBG_IAS, "[IAS ACE] - Arm command received, arm mode: %d, code: %s, Zone id: %d\n", armMode , qPrintable(code) ,zoneId);
         
         if (!code.isEmpty())
         {
@@ -188,7 +188,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         else
         {
             PanelStatus = 0x00;
-            DBG_Printf(DBG_IAS, "Debug Keypad, error, can't get PanelStatus");
+            DBG_Printf(DBG_IAS, "[IAS ACE] : error, can't get PanelStatus");
         }
         
         sendGetPanelStatusResponse(ind, zclFrame, PanelStatus);
@@ -282,7 +282,6 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
         stream << (quint8) 0x00; // Seconds Remaining
         stream << (quint8) 0x00; // Audible Notification
         stream << (quint8) 0x00; // Alarm status
-
     }
 
     { // ZCL frame
@@ -313,9 +312,8 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, const QStrin
      // payload
     QDataStream stream(&task.zclFrame.payload(), QIODevice::WriteOnly);
     stream.setByteOrder(QDataStream::LittleEndian);
-    
+
     //data
-    
     int PanelStatus = PanelStatusList.indexOf(mode);
     
     //Unknow mode ?
@@ -336,7 +334,6 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, const QStrin
         stream.setByteOrder(QDataStream::LittleEndian);
         task.zclFrame.writeToStream(stream);
     }
-
 
     return addTask(task);
 }
