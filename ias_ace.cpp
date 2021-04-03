@@ -320,6 +320,7 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, const QStrin
     if (PanelStatus < 0)
     {
         return false;
+        DBG_Printf(DBG_IAS, "Keyboard debug : 7");
     }
     
     stream << static_cast<quint8>(PanelStatus);
