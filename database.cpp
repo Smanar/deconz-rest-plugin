@@ -3927,9 +3927,12 @@ static int sqliteLoadAllSensorsCallback(void *user, int ncols, char **colval , c
                     item->setValue(false);
                 }
             }
-            item = sensor.addItem(DataTypeUInt16, RConfigPending);
-            item->setValue(0);
-            sensor.addItem(DataTypeUInt32, RConfigEnrolled)->setValue(IAS_STATE_INIT);
+            // This device already have a sensor for enrollement stuff, the ZHAAncillaryControl
+            if (sensor.modelId() != QLatin1String("URC4450BC0-X-R"))
+            {
+                sensor.addItem(DataTypeUInt16, RConfigPending)->setValue(0);
+                sensor.addItem(DataTypeUInt32, RConfigEnrolled)->setValue(IAS_STATE_INIT);
+            }
         }
 
         if (sensor.fingerPrint().hasInCluster(POWER_CONFIGURATION_CLUSTER_ID))
