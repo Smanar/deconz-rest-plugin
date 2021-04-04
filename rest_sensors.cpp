@@ -844,12 +844,10 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                     item = sensor->item(RConfigArmed);
                     if (item && item->toString() != modeArmed)
                     {
-                        DBG_Printf(DBG_IAS, "Keyboard debug : 4");
                         if (addTaskPanelStatusChanged(task, modeArmed))
                         {
                             if (item->setValue(val))
                             {
-                                DBG_Printf(DBG_IAS, "Keyboard debug : 5");
                                 ResourceItem *item2 = sensor->item(RStatePanel);
                                 item2->setValue(modeArmed);
                                 
@@ -863,7 +861,6 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                         }
                         else
                         {
-                            DBG_Printf(DBG_IAS, "Keyboard debug : 6");
                             rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/armed").arg(id), QString("Command error, %1, for parameter, armed").arg(map[pi.key()].toString())));
                             rsp.httpStatus = HttpStatusBadRequest;
                             return REQ_READY_SEND;

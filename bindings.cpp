@@ -1719,6 +1719,7 @@ bool DeRestPluginPrivate::sendConfigureReportingRequest(BindingTask &bt)
                             sensor->modelId().startsWith(QLatin1String("3300")) ||          // Centralite contatc sensor
                             sensor->modelId().startsWith(QLatin1String("3315")) ||
                             sensor->modelId().startsWith(QLatin1String("3157100")) ||
+                            sensor->modelId() == QLatin1String("URC4450BC0-X-R") || // Xfinity Keypad XHK1-UE / URC4450BC0-X-R
                             sensor->modelId().startsWith(QLatin1String("4655BC0"))))
         {
             rq.attributeId = 0x0020;   // battery voltage

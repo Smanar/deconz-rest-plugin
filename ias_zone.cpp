@@ -652,7 +652,7 @@ void DeRestPluginPrivate::checkIasEnrollmentStatus(Sensor *sensor)
 
     if (iasState == IAS_STATE_ENROLLED)
     {
-        DBG_Printf(DBG_IAS, "[IAS ZONE] - 0x%016llX Sensor is enrolled.\n", sensor->address().ext());
+        DBG_Printf(DBG_IAS, "[IAS ZONE] - 0x%016llX Sensor (%s) is enrolled.\n", sensor->address().ext(), qPrintable(sensor->type()));
         return; // already enrolled nothing todo
     }
 
@@ -759,7 +759,7 @@ void DeRestPluginPrivate::checkIasEnrollmentStatus(Sensor *sensor)
             }
             else
             {
-                DBG_Printf(DBG_IAS, "[IAS ZONE] - 0x%016llX Sensor enrollment pending... since %d seconds.\n", sensor->address().ext(), static_cast<int>(dt));
+                DBG_Printf(DBG_IAS, "[IAS ZONE] - 0x%016llX Sensor (%s) enrollment pending... since %d seconds.\n", sensor->address().ext(), qPrintable(sensor->type()), static_cast<int>(dt));
             }
         }
     }
