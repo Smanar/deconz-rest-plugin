@@ -7326,7 +7326,7 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const SensorFi
         // This device already have a sensor for enrollement stuff, the ZHAAncillaryControl
         if (modelId != QLatin1String("URC4450BC0-X-R"))
         {
-            item = sensorNode.addItem(DataTypeUInt16, RConfigPending)->setValue(0);
+            sensorNode.addItem(DataTypeUInt16, RConfigPending)->setValue(0);
             sensorNode.addItem(DataTypeUInt32, RConfigEnrolled)->setValue(IAS_STATE_INIT);
         }
     }
