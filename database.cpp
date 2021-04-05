@@ -3927,8 +3927,8 @@ static int sqliteLoadAllSensorsCallback(void *user, int ncols, char **colval , c
                     item->setValue(false);
                 }
             }
-            // This device already have a sensor for enrollement stuff, the ZHAAncillaryControl
-            if (sensor.modelId() != QLatin1String("URC4450BC0-X-R"))
+            // Only use the ZHAAncillaryControl sensor if present for enrollement
+            if (sensor.type().endsWith(QLatin1String("AncillaryControl")) || !sensor.fingerPrint().hasOutCluster(IAS_ACE_CLUSTER_ID))
             {
                 sensor.addItem(DataTypeUInt16, RConfigPending)->setValue(0);
                 sensor.addItem(DataTypeUInt32, RConfigEnrolled)->setValue(IAS_STATE_INIT);

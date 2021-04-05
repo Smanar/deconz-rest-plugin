@@ -5194,7 +5194,7 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
                     fpVibrationSensor.inClusters.push_back(ci->id());
                     fpWaterSensor.inClusters.push_back(ci->id());
                     fpDoorLockSensor.inClusters.push_back(ci->id());
-                    fpAncillaryControl.inClusters.push_back(ci->id());
+                    fpAncillaryControlSensor.inClusters.push_back(ci->id());
                 }
                     break;
 
@@ -5282,10 +5282,10 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
                     if (manufacturer.endsWith(QLatin1String("0yu2xgi")))
                     {
                     }
-                    // Use IAS_ACE_CLUSTER_ID instead
                     else if (modelId == QLatin1String("URC4450BC0-X-R"))
                     {
-                        fpAncillaryControl.inClusters.push_back(ci->id());
+                        fpAncillaryControlSensor.inClusters.push_back(ci->id());
+                        fpPresenceSensor.inClusters.push_back(ci->id());
                     }
                     else if (modelId.startsWith(QLatin1String("CO_")) ||                   // Heiman CO sensor
                         modelId.startsWith(QLatin1String("COSensor")) ||              // Heiman CO sensor (newer model)
@@ -5329,7 +5329,6 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
                              modelId == QLatin1String("E13-A21") ||                   // Sengled E13-A21 PAR38 bulp with motion sensor
                              modelId == QLatin1String("TS0202") ||                    // Tuya generic motion sensor
                              modelId == QLatin1String("TY0202") ||                    // Lidl/Silvercrest Smart Motion Sensor
-                             modelId == QLatin1String("URC4450BC0-X-R") ||            // Xfinity Keypad XHK1-UE / URC4450BC0-X-R
                              modelId == QLatin1String("66666") ||                     // Sonoff SNZB-03
                              modelId == QLatin1String("MS01") ||                      // Sonoff SNZB-03
                              modelId == QLatin1String("MSO1") ||                      // Sonoff SNZB-03
@@ -5867,7 +5866,8 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
                     }
                     if (modelId == QLatin1String("URC4450BC0-X-R"))
                     {
-                        fpAncillaryControl.outClusters.push_back(ci->id());
+                        fpAncillaryControlSensor.outClusters.push_back(ci->id());
+                        fpPresenceSensor.outClusters.push_back(ci->id());
                     }
                 }
                     break;
@@ -5964,12 +5964,12 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
         }
         
         //ZHAAncillaryControl
-        if (fpAncillaryControl.hasOutCluster(IAS_ACE_CLUSTER_ID))
+        if (fpAncillaryControlSensor.hasOutCluster(IAS_ACE_CLUSTER_ID))
         {
             
-            fpAncillaryControl.endpoint = i->endpoint();
-            fpAncillaryControl.deviceId = i->deviceId();
-            fpAncillaryControl.profileId = i->profileId();
+            fpAncillaryControlSensor.endpoint = i->endpoint();
+            fpAncillaryControlSensor.deviceId = i->deviceId();
+            fpAncillaryControlSensor.profileId = i->profileId();
 
             sensor = getSensorNodeForFingerPrint(node->address().ext(), fpAncillaryControl, "ZHAAncillaryControl");
             if (!sensor || sensor->deletedState() != Sensor::StateNormal)
@@ -7323,8 +7323,8 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const SensorFi
                 item->setValue(false);
             }
         }
-        // This device already have a sensor for enrollement stuff, the ZHAAncillaryControl
-        if (modelId != QLatin1String("URC4450BC0-X-R"))
+        // Only use the ZHAAncillaryControl sensor if present for enrollement
+        if (sensorNode.type().endsWith(QLatin1String("AncillaryControl")) || !sensorNode.fingerPrint().hasOutCluster(IAS_ACE_CLUSTER_ID))
         {
             sensorNode.addItem(DataTypeUInt16, RConfigPending)->setValue(0);
             sensorNode.addItem(DataTypeUInt32, RConfigEnrolled)->setValue(IAS_STATE_INIT);
