@@ -411,7 +411,7 @@ void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIn
 void DeRestPluginPrivate::processIasZoneStatus(Sensor *sensor, quint16 zoneStatus, NodeValue::UpdateType updateType)
 {
     ResourceItem *item2;
-    
+    return;
     // Valid for all devices type
     item2 = sensor->item(RStateLowBattery);
     if (item2)
@@ -435,7 +435,7 @@ void DeRestPluginPrivate::processIasZoneStatus(Sensor *sensor, quint16 zoneStatu
         item2->setValue(true);
         enqueueEvent(Event(RSensors, RConfigReachable, sensor->id(), item2));
     }
-    return;
+
     // In case there is more than 1 sensor for this devices
     // TODO : Need to improve
     Sensor *sensor2 = nullptr;
@@ -673,6 +673,11 @@ void DeRestPluginPrivate::checkIasEnrollmentStatus(Sensor *sensor2)
         }
 
         sensor = &s;
+    }
+    
+    if (!sensor)
+    {
+        return;
     }
 
     if (!itemIasState || !itemPending)

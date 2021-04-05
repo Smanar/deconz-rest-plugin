@@ -2170,16 +2170,18 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
             // Specil part for ZHAAncillaryControl
             if (sensor->type() == "ZHAAncillaryControl")
             {
-                DBG_Printf(DBG_INFO, "keypad debug 4\n");
+                DBG_Printf(DBG_INFO, "keypad debug 1\n");
                 if (rid.suffix == RConfigArmed && map[pi.key()].type() == QVariant::String)
                 {
                     QString modeArmed = map[pi.key()].toString();
-                    
                     item = sensor->item(RConfigArmed);
+                    DBG_Printf(DBG_INFO, "keypad debug 2\n");
                     if (item && item->toString() != modeArmed)
                     {
+                        DBG_Printf(DBG_INFO, "keypad debug 3\n");
                         if (addTaskPanelStatusChanged(task, modeArmed))
                         {
+                            DBG_Printf(DBG_INFO, "keypad debug 4\n");
                             if (item->setValue(modeArmed))
                             {
                                 ResourceItem *item2 = sensor->item(RStatePanel);
