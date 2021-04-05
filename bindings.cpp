@@ -3132,6 +3132,7 @@ bool DeRestPluginPrivate::checkSensorBindingsForAttributeReporting(Sensor *senso
                      sensor->modelId().startsWith(QLatin1String("3305-S")) ||
                      sensor->modelId().startsWith(QLatin1String("3157100")) ||
                      sensor->modelId().startsWith(QLatin1String("4655BC0")) ||
+                     sensor->modelId() == QLatin1String("URC4450BC0-X-R") || // Xfinity Keypad XHK1-UE
                      sensor->modelId() == QLatin1String("113D"))
             {
                 val = sensor->getZclValue(*i, 0x0020); // battery voltage
