@@ -2179,7 +2179,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                     {
                         if (addTaskPanelStatusChanged(task, modeArmed))
                         {
-                            if (item->setValue(val))
+                            if (item->setValue(modeArmed))
                             {
                                 ResourceItem *item2 = sensor->item(RStatePanel);
                                 item2->setValue(modeArmed);

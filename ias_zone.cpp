@@ -650,8 +650,8 @@ void DeRestPluginPrivate::checkIasEnrollmentStatus(Sensor *sensor2)
 { 
     // Need to find the good sensor, the one that have the field for enrollment
     Sensor *sensor = sensor2;
-    ResourceItem *itemIasState;
-    ResourceItem *itemPending;
+    ResourceItem *itemIasState = nullptr;
+    ResourceItem *itemPending = nullptr;
 
     for (auto &s : sensors)
     {
