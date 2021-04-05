@@ -5971,10 +5971,10 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
             fpAncillaryControlSensor.deviceId = i->deviceId();
             fpAncillaryControlSensor.profileId = i->profileId();
 
-            sensor = getSensorNodeForFingerPrint(node->address().ext(), fpAncillaryControl, "ZHAAncillaryControl");
+            sensor = getSensorNodeForFingerPrint(node->address().ext(), fpAncillaryControlSensor, "ZHAAncillaryControl");
             if (!sensor || sensor->deletedState() != Sensor::StateNormal)
             {
-                addSensorNode(node, fpAncillaryControl, "ZHAAncillaryControl", modelId, manufacturer);
+                addSensorNode(node, fpAncillaryControlSensor, "ZHAAncillaryControl", modelId, manufacturer);
             }
             else
             {
