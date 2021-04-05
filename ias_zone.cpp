@@ -179,7 +179,7 @@ void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIn
 
         if (!itemIasState || !itemPending)
         {
-            continue
+            continue;
         }
 
         sensor = &s;
@@ -441,7 +441,7 @@ void DeRestPluginPrivate::processIasZoneStatus(Sensor *sensor, quint16 zoneStatu
     Sensor *sensor2 = nullptr;
     if (sensor->modelId() == QLatin1String("URC4450BC0-X-R"))
     {
-        sensor2 = getSensorNodeForAddressAndEndpoint(sensor->srcAddress(), sensor->srcEndpoint(), QLatin1String("ZHAPresence"));
+        sensor2 = getSensorNodeForAddressAndEndpoint(sensor->address(), sensor->fingerPrint().endpoint(), QLatin1String("ZHAPresence"));
     }
     if (sensor2)
     {
@@ -655,8 +655,8 @@ void DeRestPluginPrivate::checkIasEnrollmentStatus(Sensor *sensor2)
 
     for (auto &s : sensors)
     {
-        if (!(s.address().ext() == sensor2.srcAddress().ext() &&
-              s.fingerPrint().endpoint == sensor2.srcEndpoint() &&
+        if (!(s.address().ext() == sensor2->srcAddress().ext() &&
+              s.fingerPrint().endpoint == sensor2->srcEndpoint() &&
               s.fingerPrint().hasInCluster(IAS_ZONE_CLUSTER_ID) &&
               s.deletedState() == Sensor::StateNormal))
         {
