@@ -669,7 +669,7 @@ void DeRestPluginPrivate::checkIasEnrollmentStatus(Sensor *sensor2)
 
         if (!itemIasState || !itemPending)
         {
-            continue
+            continue;
         }
 
         sensor = &s;
