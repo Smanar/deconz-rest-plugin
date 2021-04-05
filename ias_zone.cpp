@@ -157,6 +157,8 @@ void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIn
     }
 
     Sensor *sensor = nullptr;
+    ResourceItem *itemIasState;
+    ResourceItem *itemPending;
 
     for (auto &s : sensors)
     {
@@ -166,6 +168,18 @@ void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIn
               s.deletedState() == Sensor::StateNormal))
         {
             continue;
+        }
+        
+        //check if the device have itemIasState and itemPending, because a device can have many sensor and not this field on all
+        itemIasState = sensor->item(RConfigEnrolled);
+        itemPending = sensor->item(RConfigPending);
+
+        DBG_Assert(itemIasState);
+        DBG_Assert(itemPending);
+
+        if (!itemIasState || !itemPending)
+        {
+            continue
         }
 
         sensor = &s;
@@ -179,17 +193,6 @@ void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIn
 
     sensor->rx(); // mark rx here so that Read Attributes will work early on
     sensor->incrementRxCounter();
-
-    ResourceItem *itemIasState = sensor->item(RConfigEnrolled);
-    ResourceItem *itemPending = sensor->item(RConfigPending);
-
-    DBG_Assert(itemIasState);
-    DBG_Assert(itemPending);
-
-    if (!itemIasState || !itemPending)
-    {
-        return; // all IAS devices should have this
-    }
 
     IAS_EnsureValidState(itemIasState);
 
@@ -218,9 +221,6 @@ void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIn
     if (isReadAttr || isReporting)
     {
         const NodeValue::UpdateType updateType = isReadAttr ? NodeValue::UpdateByZclRead : NodeValue::UpdateByZclReport;
-
-        bool configUpdated = false;
-        bool stateUpdated = false;
 
         if (isReadAttr)
         {
@@ -286,7 +286,7 @@ void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIn
                     const quint16 zoneStatus = attr.numericValue().u16;   // might be reported or received via CMD_STATUS_CHANGE_NOTIFICATION
 
                     processIasZoneStatus(sensor, zoneStatus, updateType);
-                    stateUpdated = true;
+
                 }
                     break;
 
@@ -335,20 +335,6 @@ void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIn
             }
         }
 
-        if (stateUpdated)
-        {
-            sensor->updateStateTimestamp();
-            enqueueEvent(Event(RSensors, RStateLastUpdated, sensor->id()));
-        }
-
-        if (configUpdated || stateUpdated)
-        {
-            updateEtag(sensor->etag);
-            updateEtag(gwConfigEtag);
-            sensor->setNeedSaveDatabase(true);
-            queSaveDb(DB_SENSORS, DB_LONG_SAVE_DELAY);
-        }
-
         checkIasEnrollmentStatus(sensor);
     }
 
@@ -367,13 +353,6 @@ void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIn
         DBG_Printf(DBG_IAS, "[IAS ZONE] - 0x%016llX Status Change, status: 0x%04X, zoneId: %u, delay: %u\n", sensor->address().ext(), zoneStatus, zoneId, delay);
 
         processIasZoneStatus(sensor, zoneStatus, NodeValue::UpdateByZclReport);
-
-        sensor->updateStateTimestamp();
-        enqueueEvent(Event(RSensors, RStateLastUpdated, sensor->id()));
-        updateEtag(sensor->etag);
-        updateEtag(gwConfigEtag);
-        sensor->setNeedSaveDatabase(true);
-        queSaveDb(DB_SENSORS, DB_LONG_SAVE_DELAY);
         
         checkIasEnrollmentStatus(sensor);
     }
@@ -450,6 +429,35 @@ void DeRestPluginPrivate::processIasZoneStatus(Sensor *sensor, quint16 zoneStatu
         enqueueEvent(Event(RSensors, RStateTampered, sensor->id(), item2));
     }
     
+    item2 = sensor->item(RConfigReachable);
+    if (item2 && !item2->toBool())
+    {
+        item2->setValue(true);
+        enqueueEvent(Event(RSensors, RConfigReachable, sensor->id(), item2));
+    }
+    
+    // In case there is more than 1 sensor for this devices
+    // TODO : Need to improve
+    Sensor *sensor2 = nullptr;
+    if (sensor->modelId() == QLatin1String("URC4450BC0-X-R"))
+    {
+        sensor2 = getSensorNodeForAddressAndEndpoint(sensor->srcAddress(), sensor->srcEndpoint(), QLatin1String("ZHAPresence"));
+    }
+    if (sensor2)
+    {
+        //Update the old one and switch
+        sensor->updateStateTimestamp();
+        enqueueEvent(Event(RSensors, RStateLastUpdated, sensor->id()));
+
+        updateEtag(sensor->etag);
+        updateEtag(gwConfigEtag);
+        sensor->setNeedSaveDatabase(true);
+        queSaveDb(DB_SENSORS, DB_LONG_SAVE_DELAY);
+    
+        sensor = sensor2;
+    }
+    
+    
     const char *attr = nullptr;
     if (sensor->type() == QLatin1String("ZHAAlarm"))
     {
@@ -504,15 +512,9 @@ void DeRestPluginPrivate::processIasZoneStatus(Sensor *sensor, quint16 zoneStatu
         num.u16 = zoneStatus;
         sensor->setZclValue(updateType, sensor->fingerPrint().endpoint, IAS_ZONE_CLUSTER_ID, IAS_ZONE_CLUSTER_ATTR_ZONE_STATUS_ID, num);
 
-        item2 = sensor->item(RConfigReachable);
-        if (item2 && !item2->toBool())
-        {
-            item2->setValue(true);
-            enqueueEvent(Event(RSensors, RConfigReachable, sensor->id(), item2));
-        }
-
         if (alarm && item->descriptor().suffix == RStatePresence)
-        {   // prepare to automatically set presence to false
+        {
+            // prepare to automatically set presence to false
             NodeValue &val = sensor->getZclValue(IAS_ZONE_CLUSTER_ID, IAS_ZONE_CLUSTER_ATTR_ZONE_STATUS_ID);
 
             item2 = sensor->item(RConfigDuration);
@@ -526,6 +528,15 @@ void DeRestPluginPrivate::processIasZoneStatus(Sensor *sensor, quint16 zoneStatu
             }
         }
     }
+    
+    sensor->updateStateTimestamp();
+    enqueueEvent(Event(RSensors, RStateLastUpdated, sensor->id()));
+
+    updateEtag(sensor->etag);
+    updateEtag(gwConfigEtag);
+    sensor->setNeedSaveDatabase(true);
+    queSaveDb(DB_SENSORS, DB_LONG_SAVE_DELAY);
+    
 }
 
 /*! Sends IAS Zone enroll response to IAS Zone server.
@@ -635,10 +646,34 @@ bool DeRestPluginPrivate::sendIasZoneEnrollResponse(const deCONZ::ApsDataIndicat
     This handler can be called at any time, e.g. after receiving a command or from a timer.
     \param sensor - Sensor containing the IAS zone cluster
  */
-void DeRestPluginPrivate::checkIasEnrollmentStatus(Sensor *sensor)
-{
-    ResourceItem *itemIasState = sensor->item(RConfigEnrolled); // holds per device IAS state variable
-    ResourceItem *itemPending = sensor->item(RConfigPending);
+void DeRestPluginPrivate::checkIasEnrollmentStatus(Sensor *sensor2)
+{ 
+    // Need to find the good sensor, the one that have the field for enrollment
+    Sensor *sensor = sensor2;
+    ResourceItem *itemIasState;
+    ResourceItem *itemPending;
+
+    for (auto &s : sensors)
+    {
+        if (!(s.address().ext() == sensor2.srcAddress().ext() &&
+              s.fingerPrint().endpoint == sensor2.srcEndpoint() &&
+              s.fingerPrint().hasInCluster(IAS_ZONE_CLUSTER_ID) &&
+              s.deletedState() == Sensor::StateNormal))
+        {
+            continue;
+        }
+        
+        //check if the device have itemIasState and itemPending, because a device can have many sensor and not this field on all
+        itemIasState = sensor->item(RConfigEnrolled);
+        itemPending = sensor->item(RConfigPending);
+
+        if (!itemIasState || !itemPending)
+        {
+            continue
+        }
+
+        sensor = &s;
+    }
 
     if (!itemIasState || !itemPending)
     {
