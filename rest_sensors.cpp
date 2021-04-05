@@ -2184,6 +2184,10 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                             {
                                 ResourceItem *item2 = sensor->item(RStatePanel);
                                 item2->setValue(modeArmed);
+                                
+                                Event e(RSensors, RStatePanel, sensor->id(), item2);
+                                enqueueEvent(e);
+                                
                                 DBG_Printf(DBG_INFO, "keypad debug 5\n");
                                 rspItemState[QString("/sensors/%1/config/armed").arg(id)] = map["armed"];
                                 rspItem["success"] = rspItemState;
