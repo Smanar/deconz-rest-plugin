@@ -435,7 +435,7 @@ void DeRestPluginPrivate::processIasZoneStatus(Sensor *sensor, quint16 zoneStatu
         item2->setValue(true);
         enqueueEvent(Event(RSensors, RConfigReachable, sensor->id(), item2));
     }
-    
+    return;
     // In case there is more than 1 sensor for this devices
     // TODO : Need to improve
     Sensor *sensor2 = nullptr;
@@ -445,7 +445,7 @@ void DeRestPluginPrivate::processIasZoneStatus(Sensor *sensor, quint16 zoneStatu
     }
     if (sensor2)
     {
-        //Update the old one and switch
+        //Update the old one and switch them
         sensor->updateStateTimestamp();
         enqueueEvent(Event(RSensors, RStateLastUpdated, sensor->id()));
 
@@ -456,7 +456,7 @@ void DeRestPluginPrivate::processIasZoneStatus(Sensor *sensor, quint16 zoneStatu
     
         sensor = sensor2;
     }
-    
+
     
     const char *attr = nullptr;
     if (sensor->type() == QLatin1String("ZHAAlarm"))

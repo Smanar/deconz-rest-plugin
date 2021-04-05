@@ -2170,6 +2170,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
             // Specil part for ZHAAncillaryControl
             if (sensor->type() == "ZHAAncillaryControl")
             {
+                DBG_Printf(DBG_INFO, "keypad debug 4\n");
                 if (rid.suffix == RConfigArmed && map[pi.key()].type() == QVariant::String)
                 {
                     QString modeArmed = map[pi.key()].toString();
@@ -2183,7 +2184,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                             {
                                 ResourceItem *item2 = sensor->item(RStatePanel);
                                 item2->setValue(modeArmed);
-                                
+                                DBG_Printf(DBG_INFO, "keypad debug 5\n");
                                 rspItemState[QString("/sensors/%1/config/armed").arg(id)] = map["armed"];
                                 rspItem["success"] = rspItemState;
 
