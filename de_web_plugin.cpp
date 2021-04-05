@@ -7325,7 +7325,7 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const SensorFi
         }
         // Only use the ZHAAncillaryControl sensor if present for enrollement, but only enabled for one device ATM
         if (modelId != QLatin1String("URC4450BC0-X-R") ||
-           (sensorNode.type().endsWith(QLatin1String("AncillaryControl")) || !sensorNode.fingerPrint().hasOutCluster(IAS_ACE_CLUSTER_ID))
+           (sensorNode.type().endsWith(QLatin1String("AncillaryControl")) || !sensorNode.fingerPrint().hasOutCluster(IAS_ACE_CLUSTER_ID)))
         {
             sensorNode.addItem(DataTypeUInt16, RConfigPending)->setValue(0);
             sensorNode.addItem(DataTypeUInt32, RConfigEnrolled)->setValue(IAS_STATE_INIT);
