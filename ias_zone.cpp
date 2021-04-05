@@ -157,8 +157,8 @@ void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIn
     }
 
     Sensor *sensor = nullptr;
-    ResourceItem *itemIasState;
-    ResourceItem *itemPending;
+    ResourceItem *itemIasState = nullptr;
+    ResourceItem *itemPending = nullptr;
 
     for (auto &s : sensors)
     {
