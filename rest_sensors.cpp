@@ -2170,32 +2170,20 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
             // Specil part for ZHAAncillaryControl
             if (sensor->type() == "ZHAAncillaryControl")
             {
-                DBG_Printf(DBG_INFO, "keypad debug 1\n");
-                if (rid.suffix == RConfigArmed && map[pi.key()].type() == QVariant::String)
+                if (rid.suffix == RConfigArmed)
                 {
-                    QString modeArmed = map[pi.key()].toString();
-                    item = sensor->item(RConfigArmed);
-                    DBG_Printf(DBG_INFO, "keypad debug 2\n");
-                    if (item && item->toString() != modeArmed)
+                    if (map[pi.key()].type() == QVariant::String)
                     {
-                        DBG_Printf(DBG_INFO, "keypad debug 3\n");
+                        QString modeArmed = map[pi.key()].toString();
                         if (addTaskPanelStatusChanged(task, modeArmed))
                         {
-                            DBG_Printf(DBG_INFO, "keypad debug 4\n");
-                            if (item->setValue(modeArmed))
-                            {
-                                ResourceItem *item2 = sensor->item(RStatePanel);
-                                item2->setValue(modeArmed);
-                                
-                                Event e(RSensors, RStatePanel, sensor->id(), item2);
-                                enqueueEvent(e);
-                                
-                                DBG_Printf(DBG_INFO, "keypad debug 5\n");
-                                rspItemState[QString("/sensors/%1/config/armed").arg(id)] = map["armed"];
-                                rspItem["success"] = rspItemState;
+                            // Update too RStatePanel
+                            ResourceItem *item2 = sensor->item(RStatePanel);
+                            item2->setValue(modeArmed);
+                            Event e(RSensors, RStatePanel, sensor->id(), item2);
+                            enqueueEvent(e);
 
-                                updated = true;
-                            }
+                            updated = true;
                         }
                         else
                         {
@@ -2203,6 +2191,13 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                             rsp.httpStatus = HttpStatusBadRequest;
                             return REQ_READY_SEND;
                         }
+                    }
+                    else
+                    {
+                        rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/%2").arg(id).arg(pi.key()),
+                                                   QString("invalid value, %1, for parameter %2").arg(map[pi.key()].toString()).arg(pi.key())));
+                        rsp.httpStatus = HttpStatusBadRequest;
+                        return REQ_READY_SEND;
                     }
                 }
             }

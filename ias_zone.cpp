@@ -171,8 +171,8 @@ void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIn
         }
         
         //check if the device have itemIasState and itemPending, because a device can have many sensor and not this field on all
-        itemIasState = sensor->item(RConfigEnrolled);
-        itemPending = sensor->item(RConfigPending);
+        itemIasState = s.item(RConfigEnrolled);
+        itemPending = s.item(RConfigPending);
 
         DBG_Assert(itemIasState);
         DBG_Assert(itemPending);
@@ -411,7 +411,7 @@ void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIn
 void DeRestPluginPrivate::processIasZoneStatus(Sensor *sensor, quint16 zoneStatus, NodeValue::UpdateType updateType)
 {
     ResourceItem *item2;
-    return;
+
     // Valid for all devices type
     item2 = sensor->item(RStateLowBattery);
     if (item2)
@@ -664,8 +664,8 @@ void DeRestPluginPrivate::checkIasEnrollmentStatus(Sensor *sensor2)
         }
         
         //check if the device have itemIasState and itemPending, because a device can have many sensor and not this field on all
-        itemIasState = sensor->item(RConfigEnrolled);
-        itemPending = sensor->item(RConfigPending);
+        itemIasState = s.item(RConfigEnrolled);
+        itemPending = s.item(RConfigPending);
 
         if (!itemIasState || !itemPending)
         {
