@@ -8088,7 +8088,8 @@ void DeRestPluginPrivate::updateSensorNode(const deCONZ::NodeEvent &event)
                                     float vmax = 30; // TODO: check - I've seen 29
                                     float bat = battery;
 
-                                    if (i->modelId() == QLatin1String("Zen-01"))
+                                    if (i->modelId() == QLatin1String("Zen-01") ||
+                                        i->modelId() == QLatin1String("URC4450BC0-X-R"))
                                     {
                                         // 4x LR6 AA 1.5 V
                                         vmin = 36; // according to attribute 0x0036
