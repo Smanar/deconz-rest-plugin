@@ -204,7 +204,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
                 item->setValue(true);
                 sensor2->updateStateTimestamp();
                 enqueueEvent(Event(RSensors, RStatePresence, sensor2->id()));
-                updateSensorEtag(&*sensor2)
+                updateSensorEtag(&*sensor2);
             }
         }
         
