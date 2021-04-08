@@ -192,6 +192,22 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         }
         
         sendGetPanelStatusResponse(ind, zclFrame, PanelStatus);
+        
+        //Update too the presence detection
+        if (sensorNode->modelId() == QLatin1String("URC4450BC0-X-R"))
+        {
+            Sensor *sensor2 = nullptr;
+            sensor2 = getSensorNodeForAddressAndEndpoint(sensorNode->address(), sensorNode->fingerPrint().endpoint, QLatin1String("ZHAPresence"));
+            if (sensor2)
+            {
+                item = sensor2->item(RStatePresence);
+                item->setValue(true);
+                sensor2->updateStateTimestamp();
+                enqueueEvent(Event(RSensors, RStatePresence, sensor2->id()));
+                updateSensorEtag(&*sensor2)
+            }
+        }
+        
     }
     else if (zclFrame.commandId() == CMD_GET_BYPASSED_ZONE_LIST)
     {

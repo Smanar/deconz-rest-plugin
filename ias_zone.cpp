@@ -138,6 +138,7 @@ static void IAS_EnsureValidState(ResourceItem *itemIasState)
  */
 void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame)
 {
+
     QDataStream stream(zclFrame.payload());
     stream.setByteOrder(QDataStream::LittleEndian);
 
@@ -145,6 +146,8 @@ void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIn
     {
         return;
     }
+    
+    DBG_Printf(DBG_IAS, "[IAS ZONE] - Address 0x%016llX, Payload %s, Command 0x%02X\n", ind.srcAddress().ext(), qPrintable(zclFrame.payload().toHex()), zclFrame.commandId());
 
     // during setup the IAS Zone type will be read
     // start to proceed discovery here
@@ -436,25 +439,28 @@ void DeRestPluginPrivate::processIasZoneStatus(Sensor *sensor, quint16 zoneStatu
         enqueueEvent(Event(RSensors, RConfigReachable, sensor->id(), item2));
     }
 
-    // In case there is more than 1 sensor for this devices
-    // TODO : Need to improve
-    Sensor *sensor2 = nullptr;
-    if (sensor->modelId() == QLatin1String("URC4450BC0-X-R"))
+    if (false)
     {
-        sensor2 = getSensorNodeForAddressAndEndpoint(sensor->address(), sensor->fingerPrint().endpoint, QLatin1String("ZHAPresence"));
-    }
-    if (sensor2)
-    {
-        //Update the old one and switch them
-        sensor->updateStateTimestamp();
-        enqueueEvent(Event(RSensors, RStateLastUpdated, sensor->id()));
+        // In case there is more than 1 sensor for this devices
+        // TODO : Need to improve
+        Sensor *sensor2 = nullptr;
+        if (sensor->modelId() == QLatin1String("URC4450BC0-X-R"))
+        {
+            sensor2 = getSensorNodeForAddressAndEndpoint(sensor->address(), sensor->fingerPrint().endpoint, QLatin1String("ZHAPresence"));
+        }
+        if (sensor2)
+        {
+            //Update the old one and switch them
+            sensor->updateStateTimestamp();
+            enqueueEvent(Event(RSensors, RStateLastUpdated, sensor->id()));
 
-        updateEtag(sensor->etag);
-        updateEtag(gwConfigEtag);
-        sensor->setNeedSaveDatabase(true);
-        queSaveDb(DB_SENSORS, DB_LONG_SAVE_DELAY);
-    
-        sensor = sensor2;
+            updateEtag(sensor->etag);
+            updateEtag(gwConfigEtag);
+            sensor->setNeedSaveDatabase(true);
+            queSaveDb(DB_SENSORS, DB_LONG_SAVE_DELAY);
+        
+            sensor = sensor2;
+        }
     }
 
     
