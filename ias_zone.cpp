@@ -174,9 +174,6 @@ void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIn
         itemIasState = s.item(RConfigEnrolled);
         itemPending = s.item(RConfigPending);
 
-        DBG_Assert(itemIasState);
-        DBG_Assert(itemPending);
-
         if (!itemIasState || !itemPending)
         {
             continue;
@@ -184,6 +181,9 @@ void DeRestPluginPrivate::handleIasZoneClusterIndication(const deCONZ::ApsDataIn
 
         sensor = &s;
     }
+
+    DBG_Assert(itemIasState);
+    DBG_Assert(itemPending);
 
     if (!sensor)
     {

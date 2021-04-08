@@ -2182,6 +2182,11 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                             item2->setValue(modeArmed);
                             Event e(RSensors, RStatePanel, sensor->id(), item2);
                             enqueueEvent(e);
+                            // And clear RStateAction
+                            item2 = sensor->item(RStateAction);
+                            item2->setValue(QString(""));
+                            Event e(RSensors, RStateAction, sensor->id(), item2);
+                            enqueueEvent(e);
 
                             updated = true;
                         }
