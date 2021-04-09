@@ -1963,7 +1963,7 @@ void DeRestPluginPrivate::handleMacDataRequest(const deCONZ::NodeEvent &event)
             delayedFastEnddeviceProbe(&event);
             checkSensorBindingsForClientClusters(&s);
         }
-
+DBG_Printf(DBG_IAS, "[IAS ACE] - debug keypad 88");
         checkIasEnrollmentStatus(&s);
 
         if (s.lastAttributeReportBind() < (idleTotalCounter - IDLE_ATTR_REPORT_BIND_LIMIT))

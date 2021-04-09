@@ -78,7 +78,10 @@ const QStringList PanelStatusList({
     "disarmed","armed_stay","armed_night","armed_away","exit_delay","entry_delay","not_ready_to_arm","in_alarm","arming_stay","arming_night","arming_away"
 });
 const QStringList ArmModeList({
-    "disarmed","armed_stay","armed_night","armed_away"
+    "disarmed","armed_stay","armed_night","armed_all"
+});
+const QStringList ArmModeListReturn({
+    "disarmed", "armed_stay", "armed_night", "armed_all", "invalid_code", "not_ready", "already_disarmed"
 });
 
 void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame)
@@ -115,7 +118,8 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
 
     if (zclFrame.commandId() == CMD_ARM)
     {
-        quint8 armMode;
+        quint8 DesiredArmMode;
+        quint8 ReturnedArmMode;
         quint16 length = zclFrame.payload().size() - 2;
         QString code;
         QString armcommand;
@@ -125,14 +129,14 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         quint8 dummy;
 
         //Arm Mode
-        stream >> armMode;
+        stream >> DesiredArmMode;
         
-        if (armMode > ArmModeList.size()) {
+        if (DesiredArmMode > ArmModeList.size()) {
             armcommand =  QString("unknow");
         }
         else
         {
-            armcommand =  ArmModeList[armMode];
+            armcommand =  ArmModeList[DesiredArmMode];
         }
         
         if (length > 1)
@@ -156,8 +160,9 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         //Zone ID
         stream >> zoneId;
         
-        DBG_Printf(DBG_IAS, "[IAS ACE] - Arm command received, arm mode: %d, code: %s, Zone id: %d\n", armMode , qPrintable(code) ,zoneId);
+        DBG_Printf(DBG_IAS, "[IAS ACE] - Arm command received, arm mode: %d, code: %s, Zone id: %d\n", DesiredArmMode , qPrintable(code) ,zoneId);
         
+        //Making websocket notification if there is a code to check
         if (!code.isEmpty())
         {
             item = sensorNode->item(RStateAction);
@@ -172,21 +177,39 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
             }
         }
         
-        //Jut memorise the value for the moment
+        //--------------------------------------------
+        // THE VERIFICATION CHECK NEED TO HAPPEN HERE
+        //-------------------------------------------
+        // Jut memorise the value for the moment,
+        // Arm mode response is not used, the code only work using the panel status
+
+        // Send the same value to confirm or error, no test yet
+        ReturnedArmMode = DesiredArmMode;
+        
+        if (ReturnedArmMode > 0x03) {
+            ReturnedArmMode = 0x04; // Invalid
+        }
+
+        // Update the API if field exist
         item = sensorNode->item(RStateArmMode);
         if (item)
         {
+            if (ReturnedArmMode > ArmModeListReturn.size()) {
+                armcommand =  QString("unknow");
+            }
+            else
+            {
+                armcommand =  ArmModeListReturn[ReturnedArmMode];
+            }
+            
             item->setValue(armcommand);
             Event e(RSensors, RStateArmMode, sensorNode->id(), item);
             enqueueEvent(e);
             stateUpdated = true;
         }
 
-        // Send the same value to confirm or error, no test yet
-        if (armMode > 0x03) {
-            armMode = 0x04; // Invalid
-        }
-        sendArmResponse(ind, zclFrame, armMode);
+        //Send the request
+        sendArmResponse(ind, zclFrame, ReturnedArmMode);
 
     }
     else if (zclFrame.commandId() == CMD_EMERGENCY)
@@ -221,7 +244,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         
         sendGetPanelStatusResponse(ind, zclFrame, PanelStatus);
         
-        //Update too the presence detection
+        //Update too the presence detection, this device have one, triger when you move front of it
         if (sensorNode->modelId() == QLatin1String("URC4450BC0-X-R"))
         {
             Sensor *sensor2 = nullptr;
@@ -230,6 +253,14 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
             {
                 item = sensor2->item(RStatePresence);
                 item->setValue(true);
+                
+                ResourceItem *item2;
+                item2 = sensor2->item(RConfigDuration);
+                if (item2 && item2->toNumber() > 0)
+                {
+                    sensor2->durationDue = item->lastSet().addSecs(item2->toNumber());
+                }
+                
                 sensor2->updateStateTimestamp();
                 enqueueEvent(Event(RSensors, RStatePresence, sensor2->id()));
                 updateSensorEtag(&*sensor2);
@@ -335,6 +366,7 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
         {
            stream << (quint8) 0x00; // Seconds Remaining 
         }
+        
         stream << (quint8) 0x01; // Audible Notification
         stream << (quint8) 0x00; // Alarm status
     }
@@ -378,7 +410,16 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, const QStrin
     }
     
     stream << static_cast<quint8>(PanelStatus);
-    stream << (quint8) 0x00; // Seconds Remaining
+    
+    if ((PanelStatus == 0x04) || ( PanelStatus == 0x05))
+    {
+        stream << (quint8) 0x05; // Seconds Remaining
+    }
+    else
+    {
+       stream << (quint8) 0x00; // Seconds Remaining 
+    }
+    
     stream << (quint8) 0x01; // Audible Notification
     stream << (quint8) 0x00; // Alarm status
 
