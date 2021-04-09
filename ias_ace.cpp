@@ -110,12 +110,11 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         return;
     }
     
+    ResourceItem *item;
     bool stateUpdated = false;
 
     if (zclFrame.commandId() == CMD_ARM)
     {
-        ResourceItem *item;
-        
         quint8 armMode;
         quint16 length = zclFrame.payload().size() - 2;
         QString code;
