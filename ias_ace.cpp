@@ -394,7 +394,7 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, const QStrin
     task.zclFrame.setSequenceNumber(zclSeq++);
     task.zclFrame.setCommandId(CMD_PANEL_STATUS_CHANGED);
     task.zclFrame.setFrameControl(deCONZ::ZclFCClusterCommand |
-                                  deCONZ::ZclFCDirectionClientToServer |
+                                  deCONZ::ZclFCDirectionServerToClient |
                                   deCONZ::ZclFCDisableDefaultResponse);
      // payload
     QDataStream stream(&task.zclFrame.payload(), QIODevice::WriteOnly);
