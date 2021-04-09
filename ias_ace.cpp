@@ -26,12 +26,22 @@
 #define CMD_GET_BYPASSED_ZONE_LIST 0x08
 #define CMD_GET_ZONE_STATUS 0x09
 
-//  Arm mode
-//-------------    
+//  Arm mode command
+//-------------------
 // 0x00 Disarm    
 // 0x01 Arm Day/Home Zones Only
 // 0x02 Arm Night/Sleep Zones Only
 // 0x03 Arm All Zones
+
+//  Arm mode response
+//-------------------
+// 0x00 All Zones Disarmed
+// 0x01 Only Day/Home Zones Armed
+// 0x02 Only Night/Sleep Zones Armed
+// 0x03 All Zones Armed
+// 0x04 Invalid Arm/Disarm Code
+// 0x05 Not ready to arm*
+// 0x06 Already disarmed
 
 //   Panel status
 // --------------        
@@ -67,7 +77,9 @@
 const QStringList PanelStatusList({
     "disarmed","armed_stay","armed_night","armed_away","exit_delay","entry_delay","not_ready_to_arm","in_alarm","arming_stay","arming_night","arming_away"
 });
-
+const QStringList ArmModeList({
+    "disarmed","armed_stay","armed_night","armed_away"
+});
 
 void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame)
 {
@@ -102,6 +114,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
 
     if (zclFrame.commandId() == CMD_ARM)
     {
+        ResourceItem *item;
         
         quint8 armMode;
         quint16 length = zclFrame.payload().size() - 2;
@@ -115,17 +128,19 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         //Arm Mode
         stream >> armMode;
         
-        if (armMode > PanelStatusList.size()) {
+        if (armMode > ArmModeList.size()) {
             armcommand =  QString("unknow");
         }
         else
         {
-            armcommand =  PanelStatusList[armMode];
+            armcommand =  ArmModeList[armMode];
         }
         
         if (length > 1)
         {
-            // This part can vary, according to device
+            // This part can vary, according to device, for exemple keyfob have length = 0
+            // the Arm/Disarm Code SHOULD be between four and eight alphanumeric characters in length.
+            // The string encoding SHALL be UTF-8.
             
             // Code lenght
             stream >> dummy;
@@ -146,9 +161,9 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         
         if (!code.isEmpty())
         {
-            ResourceItem *item = sensorNode->item(RStateAction);
+            item = sensorNode->item(RStateAction);
 
-            if (item )
+            if (item)
             {
                 QString action = QString("%1,%2,%3").arg(armcommand).arg(code).arg(zclFrame.sequenceNumber());
                 item->setValue(action);
@@ -157,9 +172,23 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
                 stateUpdated = true;
             }
         }
-
-        sendArmResponse(ind, zclFrame, armMode);
         
+        //Jut memorise the value for the moment
+        item = sensorNode->item(RConfigArmed);
+        if (item)
+        {
+            item->setValue(armcommand);
+            Event e(RSensors, RConfigArmed, sensorNode->id(), item);
+            enqueueEvent(e);
+            stateUpdated = true;
+        }
+
+        // Send the same value to confirm or error
+        if (armMode > 0x03) {
+            armMode = 0x04; // Invalid
+        }
+        sendArmResponse(ind, zclFrame, armMode);
+
     }
     else if (zclFrame.commandId() == CMD_EMERGENCY)
     {
@@ -180,14 +209,14 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
     {
         quint8 PanelStatus;
         
-        ResourceItem *item = sensorNode->item(RStatePanel);
+        item = sensorNode->item(RStatePanel);
         if (item && !item->toString().isEmpty())
         {
             PanelStatus = PanelStatusList.indexOf(item->toString());
         }
         else
         {
-            PanelStatus = 0x00;
+            PanelStatus = 0x00;  // Disarmed
             DBG_Printf(DBG_IAS, "[IAS ACE] : error, can't get PanelStatus");
         }
         
@@ -230,7 +259,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
 void DeRestPluginPrivate::sendArmResponse(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame, quint8 armMode)
 {
     //Not supported ?
-    if ( armMode > 0x0A)
+    if ( armMode > 0x06)
     {
         return;
     }
@@ -290,13 +319,24 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
     outZclFrame.setFrameControl(deCONZ::ZclFCClusterCommand |
                                 deCONZ::ZclFCDirectionServerToClient); // deCONZ::ZclFCDisableDefaultResponse
 
+    // The Seconds Remaining parameter SHALL be provided if the Panel Status parameter has a value of 0x04
+    // (Exit delay) or 0x05 (Entry delay).
+
     { // payload
         QDataStream stream(&outZclFrame.payload(), QIODevice::WriteOnly);
         stream.setByteOrder(QDataStream::LittleEndian);
 
         stream << (quint8) PanelStatus; // Panel status
-        stream << (quint8) 0x00; // Seconds Remaining
-        stream << (quint8) 0x00; // Audible Notification
+        
+        if ((PanelStatus == 0x04) || ( PanelStatus == 0x05))
+        {
+            stream << (quint8) 0x05; // Seconds Remaining
+        }
+        else
+        {
+           stream << (quint8) 0x00; // Seconds Remaining 
+        }
+        stream << (quint8) 0x01; // Audible Notification
         stream << (quint8) 0x00; // Alarm status
     }
 
@@ -340,7 +380,7 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, const QStrin
     
     stream << static_cast<quint8>(PanelStatus);
     stream << (quint8) 0x00; // Seconds Remaining
-    stream << (quint8) 0x00; // Audible Notification
+    stream << (quint8) 0x01; // Audible Notification
     stream << (quint8) 0x00; // Alarm status
 
     // ZCL frame
