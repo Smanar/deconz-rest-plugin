@@ -98,7 +98,6 @@ extern const char *RStateOpen;
 extern const char *RStateOrientationX;
 extern const char *RStateOrientationY;
 extern const char *RStateOrientationZ;
-extern const char *RStatePanel;
 extern const char *RStatePresence;
 extern const char *RStatePressure;
 extern const char *RStatePower;
@@ -127,6 +126,7 @@ extern const char *RStateX;
 extern const char *RStateY;
 
 extern const char *RConfigArmed;
+extern const char *RConfigPanel;
 extern const char *RConfigAlert;
 extern const char *RConfigLock;
 extern const char *RConfigBattery;

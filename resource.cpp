@@ -84,7 +84,6 @@ const char *RStateOpen = "state/open";
 const char *RStateOrientationX = "state/orientation_x";
 const char *RStateOrientationY = "state/orientation_y";
 const char *RStateOrientationZ = "state/orientation_z";
-const char *RStatePanel = "state/panel";
 const char *RStatePresence = "state/presence";
 const char *RStatePressure = "state/pressure";
 const char *RStatePower = "state/power";
@@ -120,6 +119,7 @@ const QStringList RStateEffectValuesMueller({
 });
 
 const char *RConfigArmed = "config/armed";
+const char *RConfigPanel = "config/panel";
 const char *RConfigAlert = "config/alert";
 const char *RConfigLock = "config/lock";
 const char *RConfigBattery = "config/battery";
@@ -278,7 +278,6 @@ void initResourceDescriptors()
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeBool, RStateReachable));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt8, RStateSat));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeString, RActionScene));
-    rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeString, RStatePanel));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt16, RStateSpectralX));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt16, RStateSpectralY));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt16, RStateSpectralZ));
@@ -302,6 +301,7 @@ void initResourceDescriptors()
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt16, RStateY));
 
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeString, RConfigAlert));
+    rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeString, RConfigPanel));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeBool, RConfigLock));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt8, RConfigBattery, 0, 100));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt16, RConfigColorCapabilities));

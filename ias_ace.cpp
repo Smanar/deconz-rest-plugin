@@ -231,7 +231,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
     {
         quint8 PanelStatus;
         
-        item = sensorNode->item(RStatePanel);
+        item = sensorNode->item(RConfigPanel);
         if (item && !item->toString().isEmpty())
         {
             PanelStatus = PanelStatusList.indexOf(item->toString());

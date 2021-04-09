@@ -2170,17 +2170,17 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
             // Specil part for ZHAAncillaryControl
             if (sensor->type() == "ZHAAncillaryControl")
             {
-                if (rid.suffix == RConfigArmed)
+                if (rid.suffix == RConfigPanel)
                 {
                     if (map[pi.key()].type() == QVariant::String)
                     {
                         QString modeArmed = map[pi.key()].toString();
                         if (addTaskPanelStatusChanged(task, modeArmed))
                         {
-                            // Update too RStatePanel
-                            ResourceItem *item2 = sensor->item(RStatePanel);
+                            // Update too RConfigPanel
+                            ResourceItem *item2 = sensor->item(RConfigPanel);
                             item2->setValue(modeArmed);
-                            enqueueEvent(Event(RSensors, RStatePanel, sensor->id(), item2));
+                            enqueueEvent(Event(RSensors, RConfigPanel, sensor->id(), item2));
                             // And clear RStateAction
                             item2 = sensor->item(RStateAction);
                             item2->setValue(QString(""));
