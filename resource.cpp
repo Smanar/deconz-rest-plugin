@@ -56,6 +56,7 @@ const char *RStateConsumption = "state/consumption";
 const char *RStateCurrent = "state/current";
 const char *RStateCt = "state/ct";
 const char *RStateAction = "state/action";
+const char *RStateArmMode = "state/armmode";
 const char *RStateDark = "state/dark";
 const char *RStateDaylight = "state/daylight";
 const char *RStateEffect = "state/effect";
@@ -241,6 +242,7 @@ void initResourceDescriptors()
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeBool, RStateCarbonMonoxide));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeString, RStateColorMode));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeString, RStateAction));
+    rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeString, RStateArmMode));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt64, RStateConsumption));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt16, RStateCurrent));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt16, RStateCt));

@@ -173,11 +173,11 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         }
         
         //Jut memorise the value for the moment
-        item = sensorNode->item(RConfigArmed);
+        item = sensorNode->item(RStateArmMode);
         if (item)
         {
             item->setValue(armcommand);
-            Event e(RSensors, RConfigArmed, sensorNode->id(), item);
+            Event e(RSensors, RStateArmMode, sensorNode->id(), item);
             enqueueEvent(e);
             stateUpdated = true;
         }
