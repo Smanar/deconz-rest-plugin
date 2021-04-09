@@ -40,7 +40,7 @@
 // 0x02 Only Night/Sleep Zones Armed
 // 0x03 All Zones Armed
 // 0x04 Invalid Arm/Disarm Code
-// 0x05 Not ready to arm*
+// 0x05 Not ready to arm
 // 0x06 Already disarmed
 
 //   Panel status
@@ -183,7 +183,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
             stateUpdated = true;
         }
 
-        // Send the same value to confirm or error
+        // Send the same value to confirm or error, no test yet
         if (armMode > 0x03) {
             armMode = 0x04; // Invalid
         }
