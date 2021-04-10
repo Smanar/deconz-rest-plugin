@@ -78,10 +78,10 @@ const QStringList PanelStatusList({
     "disarmed","armed_stay","armed_night","armed_away","exit_delay","entry_delay","not_ready_to_arm","in_alarm","arming_stay","arming_night","arming_away"
 });
 const QStringList ArmModeList({
-    "disarmed","armed_stay","armed_night","armed_all"
+    "disarmed","armed_stay","armed_night","armed_away"
 });
 const QStringList ArmModeListReturn({
-    "disarmed", "armed_stay", "armed_night", "armed_all", "invalid_code", "not_ready", "already_disarmed"
+    "disarmed", "armed_stay", "armed_night", "armed_away", "invalid_code", "not_ready", "already_disarmed"
 });
 
 void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame)
