@@ -264,7 +264,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
             }
         }
         
-        DBG_Printf(DBG_IAS, "[IAS ACE] - Timer counter %u\n", secs)
+        DBG_Printf(DBG_IAS, "[IAS ACE] - Timer counter %u\n", secs);
         
         sendGetPanelStatusResponse(ind, zclFrame, PanelStatus, secs);
         
