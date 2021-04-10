@@ -260,8 +260,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
             if (item)
             {
                 secs = static_cast<quint8>(item->toNumber());
-                secs -= 1;
-                if (secs < 0x00) { secs = 0x00; }
+                if (secs > 0) { secs -= 1; }
             }
         }
         
