@@ -3197,6 +3197,7 @@ static int sqliteLoadAllSensorsCallback(void *user, int ncols, char **colval , c
             sensor.addItem(DataTypeString, RConfigArmed);
             sensor.addItem(DataTypeString, RStateAction);
             sensor.addItem(DataTypeString, RStateArmMode);
+            sensor.addItem(DataTypeUInt32, RConfigHostFlags); // hidden
             sensor.addItem(DataTypeString, RConfigPanel)->setValue(QString("disarmed"));
             sensor.addItem(DataTypeBool, RStateTampered)->setValue(false);
         }

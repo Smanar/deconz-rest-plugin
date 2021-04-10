@@ -121,7 +121,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         quint8 DesiredArmMode;
         quint8 ReturnedArmMode;
         quint16 length = zclFrame.payload().size() - 2;
-        QString code;
+        QString code = QString("");
         QString armcommand;
         quint8 zoneId;
         quint8 codeTemp;
@@ -139,9 +139,10 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
             armcommand =  ArmModeList[DesiredArmMode];
         }
         
+        // If there is code
+        // This part can vary, according to device, for exemple keyfob have length = 0
         if (length > 1)
         {
-            // This part can vary, according to device, for exemple keyfob have length = 0
             // the Arm/Disarm Code SHOULD be between four and eight alphanumeric characters in length.
             // The string encoding SHALL be UTF-8.
             
@@ -162,9 +163,17 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         
         DBG_Printf(DBG_IAS, "[IAS ACE] - Arm command received, arm mode: %d, code: %s, Zone id: %d\n", DesiredArmMode , qPrintable(code) ,zoneId);
         
-        //Making websocket notification if there is a code to check
+        // Need to check code ?
         if (!code.isEmpty())
         {
+            
+            //--------------------------------------------
+            // THE VERIFICATION CHECK NEED TO HAPPEN HERE
+            //-------------------------------------------
+            // Jut memorise the value for the moment,
+            // Arm mode response is not used, the code only work using the panel status
+            
+            //Making websocket notification if there is a code to check
             item = sensorNode->item(RStateAction);
 
             if (item)
@@ -175,19 +184,15 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
                 enqueueEvent(e);
                 stateUpdated = true;
             }
+            
+            // Send the same value to confirm or error, no test yet
+            ReturnedArmMode = DesiredArmMode;
+            
         }
-        
-        //--------------------------------------------
-        // THE VERIFICATION CHECK NEED TO HAPPEN HERE
-        //-------------------------------------------
-        // Jut memorise the value for the moment,
-        // Arm mode response is not used, the code only work using the panel status
-
-        // Send the same value to confirm or error, no test yet
-        ReturnedArmMode = DesiredArmMode;
-        
-        if (ReturnedArmMode > 0x03) {
-            ReturnedArmMode = 0x04; // Invalid
+        else
+        {
+            // no code, always validate
+            ReturnedArmMode = DesiredArmMode;
         }
 
         // Update the API if field exist
@@ -206,6 +211,11 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
             Event e(RSensors, RStateArmMode, sensorNode->id(), item);
             enqueueEvent(e);
             stateUpdated = true;
+        }
+        
+        //Can have strange result if not used, need more check
+        if (ReturnedArmMode > 0x03) {
+            return;
         }
 
         //Send the request
@@ -230,6 +240,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
     else if (zclFrame.commandId() == CMD_GET_PANEL_STATUS)
     {
         quint8 PanelStatus;
+        quint8 secs = 0x00;
         
         item = sensorNode->item(RConfigPanel);
         if (item && !item->toString().isEmpty())
@@ -242,7 +253,19 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
             DBG_Printf(DBG_IAS, "[IAS ACE] : error, can't get PanelStatus");
         }
         
-        sendGetPanelStatusResponse(ind, zclFrame, PanelStatus);
+        //Counter
+        if ((PanelStatus == 0x04) || ( PanelStatus == 0x05))
+        {
+            item = sensorNode->item(RConfigHostFlags);
+            if (item)
+            {
+                secs = static_cast<quint8>(item->toNumber());
+                secs -= 1;
+                if (secs < 0x00) { secs = 0x00; }
+            }
+        }
+        
+        sendGetPanelStatusResponse(ind, zclFrame, PanelStatus, secs);
         
         //Update too the presence detection, this device have one, triger when you move front of it
         if (sensorNode->modelId() == QLatin1String("URC4450BC0-X-R"))
@@ -330,7 +353,7 @@ void DeRestPluginPrivate::sendArmResponse(const deCONZ::ApsDataIndication &ind, 
     }
 }
 
-void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame , quint8 PanelStatus)
+void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame , quint8 PanelStatus, quint8 secs )
 {
 
     deCONZ::ApsDataRequest req;
@@ -357,16 +380,7 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
         stream.setByteOrder(QDataStream::LittleEndian);
 
         stream << (quint8) PanelStatus; // Panel status
-        
-        if ((PanelStatus == 0x04) || ( PanelStatus == 0x05))
-        {
-            stream << (quint8) 0x05; // Seconds Remaining
-        }
-        else
-        {
-           stream << (quint8) 0x00; // Seconds Remaining 
-        }
-        
+        stream << (quint8) secs; // Seconds Remaining 
         stream << (quint8) 0x01; // Audible Notification
         stream << (quint8) 0x00; // Alarm status
     }

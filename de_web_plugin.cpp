@@ -6494,6 +6494,7 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const SensorFi
         sensorNode.addItem(DataTypeString, RConfigArmed);
         sensorNode.addItem(DataTypeString, RStateAction);
         sensorNode.addItem(DataTypeString, RStateArmMode);
+        sensorNode.addItem(DataTypeUInt32, RConfigHostFlags); // hidden
         sensorNode.addItem(DataTypeString, RConfigPanel)->setValue(QString("disarmed"));
         sensorNode.addItem(DataTypeBool, RStateTampered)->setValue(false);
     }

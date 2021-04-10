@@ -2181,6 +2181,10 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                             ResourceItem *item2 = sensor->item(RConfigPanel);
                             item2->setValue(modeArmed);
                             enqueueEvent(Event(RSensors, RConfigPanel, sensor->id(), item2));
+                            //Update timer counter even useless
+                            item2 = sensor->item(RConfigHostFlags);
+                            item2->setValue(5);
+                            enqueueEvent(Event(RSensors, RConfigHostFlags, sensor->id(), item2));
                             // And clear RStateAction
                             item2 = sensor->item(RStateAction);
                             item2->setValue(QString(""));
