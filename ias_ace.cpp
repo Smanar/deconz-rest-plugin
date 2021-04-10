@@ -264,6 +264,8 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
             }
         }
         
+        DBG_Printf(DBG_IAS, "[IAS ACE] - Timer counter %u\n", secs)
+        
         sendGetPanelStatusResponse(ind, zclFrame, PanelStatus, secs);
         
         //Update too the presence detection, this device have one, triger when you move front of it
@@ -407,8 +409,7 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, const QStrin
     task.zclFrame.setSequenceNumber(zclSeq++);
     task.zclFrame.setCommandId(CMD_PANEL_STATUS_CHANGED);
     task.zclFrame.setFrameControl(deCONZ::ZclFCClusterCommand |
-                                  deCONZ::ZclFCDirectionServerToClient |
-                                  deCONZ::ZclFCDisableDefaultResponse);
+                                  deCONZ::ZclFCDirectionServerToClient); //| deCONZ::ZclFCDisableDefaultResponse);
      // payload
     QDataStream stream(&task.zclFrame.payload(), QIODevice::WriteOnly);
     stream.setByteOrder(QDataStream::LittleEndian);
@@ -424,7 +425,7 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, const QStrin
     
     stream << static_cast<quint8>(PanelStatus);
     
-    if ((PanelStatus == 0x04) || ( PanelStatus == 0x05))
+    if (PanelStatus == 0x04 || PanelStatus == 0x05)
     {
         stream << (quint8) 0x05; // Seconds Remaining
     }
