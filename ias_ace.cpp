@@ -185,9 +185,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
                 stateUpdated = true;
             }
             
-            // Send the same value to confirm, no test yet
-            ReturnedArmMode = DesiredArmMode;
-            // Else return here, waiting for validation
+            // Else return here, waiting for validation, no response yet
             return;
  
         }
@@ -440,7 +438,7 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, const QStrin
     }
     
     stream << (quint8) 0x01; // Audible Notification
-    stream << (quint8) 0x01; // Alarm status
+    stream << (quint8) 0x00; // Alarm status
 
     // ZCL frame
     {

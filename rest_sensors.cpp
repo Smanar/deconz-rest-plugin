@@ -2170,6 +2170,30 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
             // Specil part for ZHAAncillaryControl
             if (sensor->type() == "ZHAAncillaryControl")
             {
+                if (rid.suffix == RConfigArmMode)
+                {
+                    if (map[pi.key()].type() == QVariant::String)
+                    {
+                        QString modeArmed = map[pi.key()].toString();
+                        if (addTaskSendArmResponse(task, modeArmed, 0x22))
+                        {
+                            updated = true;
+                        }
+                        else
+                        {
+                            rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/armed").arg(id), QString("Command error, %1, for parameter, armed").arg(map[pi.key()].toString())));
+                            rsp.httpStatus = HttpStatusBadRequest;
+                            return REQ_READY_SEND;
+                        }
+                    }
+                    else
+                    {
+                        rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/%2").arg(id).arg(pi.key()),
+                                                   QString("invalid value, %1, for parameter %2").arg(map[pi.key()].toString()).arg(pi.key())));
+                        rsp.httpStatus = HttpStatusBadRequest;
+                        return REQ_READY_SEND;
+                    }
+                }
                 if (rid.suffix == RConfigPanel)
                 {
                     if (map[pi.key()].type() == QVariant::String)
@@ -2195,30 +2219,6 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                         else
                         {
                             rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/panel").arg(id), QString("Command error, %1, for parameter, panel").arg(map[pi.key()].toString())));
-                            rsp.httpStatus = HttpStatusBadRequest;
-                            return REQ_READY_SEND;
-                        }
-                    }
-                    else
-                    {
-                        rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/%2").arg(id).arg(pi.key()),
-                                                   QString("invalid value, %1, for parameter %2").arg(map[pi.key()].toString()).arg(pi.key())));
-                        rsp.httpStatus = HttpStatusBadRequest;
-                        return REQ_READY_SEND;
-                    }
-                }
-                if (rid.suffix == RConfigArmMode)
-                {
-                    if (map[pi.key()].type() == QVariant::String)
-                    {
-                        QString modeArmed = map[pi.key()].toString();
-                        if (addTaskSendArmResponse(task, modeArmed, 0x22))
-                        {
-                            updated = true;
-                        }
-                        else
-                        {
-                            rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/armed").arg(id), QString("Command error, %1, for parameter, armed").arg(map[pi.key()].toString())));
                             rsp.httpStatus = HttpStatusBadRequest;
                             return REQ_READY_SEND;
                         }
