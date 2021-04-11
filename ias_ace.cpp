@@ -473,8 +473,8 @@ bool DeRestPluginPrivate::addTaskSendArmResponse(TaskItem &task, const QString &
     
     quint8 armMode;
     
-    armMode = ArmModeListReturn.indexOf(mode);
-    if (armMode > ArmModeListReturn.size())
+    armMode = PanelStatusList.indexOf(mode);
+    if (armMode > PanelStatusList.size())
     {
         return false;
     }
