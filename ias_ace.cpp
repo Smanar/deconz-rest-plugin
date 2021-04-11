@@ -382,7 +382,7 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
     { // payload
         QDataStream stream(&outZclFrame.payload(), QIODevice::WriteOnly);
         stream.setByteOrder(QDataStream::LittleEndian);
-
+        secs = 0;
         stream << (quint8) PanelStatus; // Panel status
         stream << (quint8) secs; // Seconds Remaining 
         stream << (quint8) 0x01; // Audible Notification
@@ -440,7 +440,7 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, const QStrin
     }
     
     stream << (quint8) 0x01; // Audible Notification
-    stream << (quint8) 0x00; // Alarm status
+    stream << (quint8) 0x01; // Alarm status
 
     // ZCL frame
     {
