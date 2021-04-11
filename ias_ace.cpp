@@ -182,18 +182,21 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
                 item->setValue(action);
                 Event e(RSensors, RStateAction, sensorNode->id(), item);
                 enqueueEvent(e);
+                //Memorise sequence number too
+                item = sensorNode->item(RConfigHostFlags);
+                item->setValue(zclFrame.sequenceNumber());
+                enqueueEvent(Event(RSensors, RConfigHostFlags, sensorNode->id(), item));
+                
                 stateUpdated = true;
             }
             
-            // Else return here, waiting for validation, no response yet
+            // return here, waiting for validation, no response yet
             return;
  
         }
-        else
-        {
-            // no code, always validate
-            ReturnedArmMode = DesiredArmMode;
-        }
+
+        // no code, always validate
+        ReturnedArmMode = DesiredArmMode;
 
         // Update the API if field exist
         item = sensorNode->item(RConfigArmMode);
@@ -257,17 +260,8 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
             PanelStatus = 0x00;  // Disarmed
             DBG_Printf(DBG_IAS, "[IAS ACE] : error, can't get PanelStatus");
         }
-        
-        if ((PanelStatus == 0x04) || ( PanelStatus == 0x05))
-        {
-            item = sensorNode->item(RConfigHostFlags);
-            if (item)
-            {
-                secs = static_cast<quint8>(item->toNumber());
-            }
-        }
-        
-        sendGetPanelStatusResponse(ind, zclFrame, PanelStatus, secs);
+
+        sendGetPanelStatusResponse(ind, zclFrame, PanelStatus, 0x00);
         
         //Update too the presence detection, this device have one, triger when you move front of it
         if (sensorNode->modelId() == QLatin1String("URC4450BC0-X-R"))
@@ -380,7 +374,6 @@ void DeRestPluginPrivate::sendGetPanelStatusResponse(const deCONZ::ApsDataIndica
     { // payload
         QDataStream stream(&outZclFrame.payload(), QIODevice::WriteOnly);
         stream.setByteOrder(QDataStream::LittleEndian);
-        secs = 0;
         stream << (quint8) PanelStatus; // Panel status
         stream << (quint8) secs; // Seconds Remaining 
         stream << (quint8) 0x01; // Audible Notification
@@ -471,8 +464,8 @@ bool DeRestPluginPrivate::addTaskSendArmResponse(TaskItem &task, const QString &
     
     quint8 armMode;
     
-    armMode = PanelStatusList.indexOf(mode);
-    if (armMode > PanelStatusList.size())
+    armMode = ArmModeListReturn.indexOf(mode);
+    if (armMode > ArmModeListReturn.size())
     {
         return false;
     }

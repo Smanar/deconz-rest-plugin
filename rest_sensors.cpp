@@ -2175,7 +2175,14 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                     if (map[pi.key()].type() == QVariant::String)
                     {
                         QString modeArmed = map[pi.key()].toString();
-                        if (addTaskSendArmResponse(task, modeArmed, 0x22))
+                        quint8 sn = 0x00;
+                        item = sensor->item(RConfigHostFlags);
+                        if (item)
+                        {
+                            sn = static_cast<quint8>(item->toNumber());
+                        }
+                        
+                        if (addTaskSendArmResponse(task, modeArmed, sn))
                         {
                             updated = true;
                         }
@@ -2205,10 +2212,6 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                             ResourceItem *item2 = sensor->item(RConfigPanel);
                             item2->setValue(panelmode);
                             enqueueEvent(Event(RSensors, RConfigPanel, sensor->id(), item2));
-                            //Update timer counter even useless
-                            item2 = sensor->item(RConfigHostFlags);
-                            item2->setValue(5);
-                            enqueueEvent(Event(RSensors, RConfigHostFlags, sensor->id(), item2));
                             // And clear RStateAction
                             item2 = sensor->item(RStateAction);
                             item2->setValue(QString(""));
