@@ -6491,9 +6491,8 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const SensorFi
     else if (sensorNode.type().endsWith(QLatin1String("AncillaryControl")))
     {
         clusterId = IAS_ACE_CLUSTER_ID;
-        sensorNode.addItem(DataTypeString, RConfigArmed);
+        sensorNode.addItem(DataTypeString, RConfigArmMode);
         sensorNode.addItem(DataTypeString, RStateAction);
-        sensorNode.addItem(DataTypeString, RStateArmMode);
         sensorNode.addItem(DataTypeUInt32, RConfigHostFlags); // hidden
         sensorNode.addItem(DataTypeString, RConfigPanel)->setValue(QString("disarmed"));
         sensorNode.addItem(DataTypeBool, RStateTampered)->setValue(false);
@@ -13352,6 +13351,7 @@ bool DeRestPluginPrivate::addTask(const TaskItem &task)
         (task.taskType != TaskWriteAttribute) &&
         (task.taskType != TaskViewScene) &&
         (task.taskType != TaskTuyaRequest) &&
+        (task.taskType != TaskIASACE) &&
         (task.taskType != TaskAddScene))
     {
         for (; i != end; ++i)

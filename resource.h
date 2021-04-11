@@ -68,7 +68,6 @@ extern const char *RStateCarbonMonoxide;
 extern const char *RStateColorMode;
 extern const char *RStateConsumption;
 extern const char *RStateAction;
-extern const char *RStateArmMode;
 extern const char *RStateCt;
 extern const char *RStateCurrent;
 extern const char *RStateDark;
@@ -125,7 +124,7 @@ extern const char *RStateWindowOpen;
 extern const char *RStateX;
 extern const char *RStateY;
 
-extern const char *RConfigArmed;
+extern const char *RConfigArmMode;
 extern const char *RConfigPanel;
 extern const char *RConfigAlert;
 extern const char *RConfigLock;

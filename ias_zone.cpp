@@ -438,31 +438,6 @@ void DeRestPluginPrivate::processIasZoneStatus(Sensor *sensor, quint16 zoneStatu
         item2->setValue(true);
         enqueueEvent(Event(RSensors, RConfigReachable, sensor->id(), item2));
     }
-
-    if (false)
-    {
-        // In case there is more than 1 sensor for this devices
-        // TODO : Need to improve
-        Sensor *sensor2 = nullptr;
-        if (sensor->modelId() == QLatin1String("URC4450BC0-X-R"))
-        {
-            sensor2 = getSensorNodeForAddressAndEndpoint(sensor->address(), sensor->fingerPrint().endpoint, QLatin1String("ZHAPresence"));
-        }
-        if (sensor2)
-        {
-            //Update the old one and switch them
-            sensor->updateStateTimestamp();
-            enqueueEvent(Event(RSensors, RStateLastUpdated, sensor->id()));
-
-            updateEtag(sensor->etag);
-            updateEtag(gwConfigEtag);
-            sensor->setNeedSaveDatabase(true);
-            queSaveDb(DB_SENSORS, DB_LONG_SAVE_DELAY);
-        
-            sensor = sensor2;
-        }
-    }
-
     
     const char *attr = nullptr;
     if (sensor->type() == QLatin1String("ZHAAlarm"))

@@ -2174,12 +2174,12 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                 {
                     if (map[pi.key()].type() == QVariant::String)
                     {
-                        QString modeArmed = map[pi.key()].toString();
-                        if (addTaskPanelStatusChanged(task, modeArmed))
+                        QString panelmode = map[pi.key()].toString();
+                        if (addTaskPanelStatusChanged(task, panelmode))
                         {
                             // Update too RConfigPanel
                             ResourceItem *item2 = sensor->item(RConfigPanel);
-                            item2->setValue(modeArmed);
+                            item2->setValue(panelmode);
                             enqueueEvent(Event(RSensors, RConfigPanel, sensor->id(), item2));
                             //Update timer counter even useless
                             item2 = sensor->item(RConfigHostFlags);
@@ -2190,6 +2190,30 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                             item2->setValue(QString(""));
                             enqueueEvent(Event(RSensors, RStateAction, sensor->id(), item2));
 
+                            updated = true;
+                        }
+                        else
+                        {
+                            rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/panel").arg(id), QString("Command error, %1, for parameter, panel").arg(map[pi.key()].toString())));
+                            rsp.httpStatus = HttpStatusBadRequest;
+                            return REQ_READY_SEND;
+                        }
+                    }
+                    else
+                    {
+                        rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/%2").arg(id).arg(pi.key()),
+                                                   QString("invalid value, %1, for parameter %2").arg(map[pi.key()].toString()).arg(pi.key())));
+                        rsp.httpStatus = HttpStatusBadRequest;
+                        return REQ_READY_SEND;
+                    }
+                }
+                if (rid.suffix == RConfigArmMode)
+                {
+                    if (map[pi.key()].type() == QVariant::String)
+                    {
+                        QString modeArmed = map[pi.key()].toString();
+                        if (addTaskSendArmResponse(task, modeArmed, 0x22))
+                        {
                             updated = true;
                         }
                         else
@@ -3727,6 +3751,10 @@ void DeRestPluginPrivate::checkSensorStateTimerFired()
                         enqueueEvent(Event(RSensors, RStateLastUpdated, sensor->id()));
                         updateSensorEtag(sensor);
                     }
+                }
+                else if (sensor->type().endsWith(QLatin1String("AncillaryControl")))
+                {
+                    DBG_Printf(DBG_IAS, "[IAS ACE] - Reseting counter\n");
                 }
 
                 sensor->durationDue = QDateTime();

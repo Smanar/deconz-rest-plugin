@@ -3194,9 +3194,8 @@ static int sqliteLoadAllSensorsCallback(void *user, int ncols, char **colval , c
         else if (sensor.type().endsWith(QLatin1String("AncillaryControl")))
         {
             clusterId = IAS_ACE_CLUSTER_ID;
-            sensor.addItem(DataTypeString, RConfigArmed);
+            sensor.addItem(DataTypeString, RConfigArmMode);
             sensor.addItem(DataTypeString, RStateAction);
-            sensor.addItem(DataTypeString, RStateArmMode);
             sensor.addItem(DataTypeUInt32, RConfigHostFlags); // hidden
             sensor.addItem(DataTypeString, RConfigPanel)->setValue(QString("disarmed"));
             sensor.addItem(DataTypeBool, RStateTampered)->setValue(false);

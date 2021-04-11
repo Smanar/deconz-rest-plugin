@@ -185,9 +185,11 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
                 stateUpdated = true;
             }
             
-            // Send the same value to confirm or error, no test yet
+            // Send the same value to confirm, no test yet
             ReturnedArmMode = DesiredArmMode;
-            
+            // Else return here, waiting for validation
+            return;
+ 
         }
         else
         {
@@ -196,7 +198,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         }
 
         // Update the API if field exist
-        item = sensorNode->item(RStateArmMode);
+        item = sensorNode->item(RConfigArmMode);
         if (item)
         {
             if (ReturnedArmMode > ArmModeListReturn.size()) {
@@ -208,7 +210,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
             }
             
             item->setValue(armcommand);
-            Event e(RSensors, RStateArmMode, sensorNode->id(), item);
+            Event e(RSensors, RConfigArmMode, sensorNode->id(), item);
             enqueueEvent(e);
             stateUpdated = true;
         }
@@ -246,6 +248,11 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         if (item && !item->toString().isEmpty())
         {
             PanelStatus = PanelStatusList.indexOf(item->toString());
+            if (PanelStatus < 0)
+            {
+                PanelStatus = 0x00;  // Disarmed
+                DBG_Printf(DBG_IAS, "[IAS ACE] : Unknow PanelStatus");
+            }
         }
         else
         {
@@ -253,18 +260,14 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
             DBG_Printf(DBG_IAS, "[IAS ACE] : error, can't get PanelStatus");
         }
         
-        //Counter
         if ((PanelStatus == 0x04) || ( PanelStatus == 0x05))
         {
             item = sensorNode->item(RConfigHostFlags);
             if (item)
             {
                 secs = static_cast<quint8>(item->toNumber());
-                if (secs > 0) { secs -= 1; }
             }
         }
-        
-        DBG_Printf(DBG_IAS, "[IAS ACE] - Timer counter %u\n", secs);
         
         sendGetPanelStatusResponse(ind, zclFrame, PanelStatus, secs);
         
@@ -425,6 +428,8 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, const QStrin
     
     stream << static_cast<quint8>(PanelStatus);
     
+    // The Seconds Remaining parameter SHALL be provided if the Panel Status parameter has a value of 0x04
+    // (Exit delay) or 0x05 (Entry delay).
     if (PanelStatus == 0x04 || PanelStatus == 0x05)
     {
         stream << (quint8) 0x05; // Seconds Remaining
@@ -436,6 +441,46 @@ bool DeRestPluginPrivate::addTaskPanelStatusChanged(TaskItem &task, const QStrin
     
     stream << (quint8) 0x01; // Audible Notification
     stream << (quint8) 0x00; // Alarm status
+
+    // ZCL frame
+    {
+        task.req.asdu().clear(); // cleanup old request data if there is any
+        QDataStream stream(&task.req.asdu(), QIODevice::WriteOnly);
+        stream.setByteOrder(QDataStream::LittleEndian);
+        task.zclFrame.writeToStream(stream);
+    }
+
+    return addTask(task);
+}
+
+bool DeRestPluginPrivate::addTaskSendArmResponse(TaskItem &task, const QString &mode, quint8 sn)
+{
+    task.taskType = TaskIASACE;
+
+    task.req.setClusterId(IAS_ACE_CLUSTER_ID);
+    task.req.setProfileId(HA_PROFILE_ID);
+
+    task.zclFrame.payload().clear();
+    task.zclFrame.setSequenceNumber(sn);
+    task.zclFrame.setCommandId(CMD_ARM_RESPONSE);
+
+    task.zclFrame.setFrameControl(deCONZ::ZclFCClusterCommand |
+                             deCONZ::ZclFCDirectionServerToClient |
+                             deCONZ::ZclFCDisableDefaultResponse);
+     // payload
+    QDataStream stream(&task.zclFrame.payload(), QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    
+    quint8 armMode;
+    
+    armMode = ArmModeListReturn.indexOf(mode);
+    if (armMode < 0)
+    {
+        return false;
+    }
+
+    //data
+    stream << (quint8) armMode; // Alarm status
 
     // ZCL frame
     {
