@@ -248,7 +248,7 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
         if (item && !item->toString().isEmpty())
         {
             PanelStatus = PanelStatusList.indexOf(item->toString());
-            if (PanelStatus < 0)
+            if (PanelStatus > PanelStatusList.size())
             {
                 PanelStatus = 0x00;  // Disarmed
                 DBG_Printf(DBG_IAS, "[IAS ACE] : Unknow PanelStatus");
@@ -474,7 +474,7 @@ bool DeRestPluginPrivate::addTaskSendArmResponse(TaskItem &task, const QString &
     quint8 armMode;
     
     armMode = ArmModeListReturn.indexOf(mode);
-    if (armMode < 0)
+    if (armMode > ArmModeListReturn.size())
     {
         return false;
     }
