@@ -243,7 +243,6 @@ void DeRestPluginPrivate::handleIasAceClusterIndication(const deCONZ::ApsDataInd
     else if (zclFrame.commandId() == CMD_GET_PANEL_STATUS)
     {
         quint8 PanelStatus;
-        quint8 secs = 0x00;
         
         item = sensorNode->item(RConfigPanel);
         if (item && !item->toString().isEmpty())
