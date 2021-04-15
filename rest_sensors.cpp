@@ -2212,7 +2212,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                         //RConfigVolume
                         if (map.contains("sound") && map["sound"].type() == QVariant::Bool)
                         {
-                            sound = map["sound"].toBool;
+                            sound = map["sound"].toBool();
                         }
                         
                         if (addTaskPanelStatusChanged(task, panelmode, sound))
