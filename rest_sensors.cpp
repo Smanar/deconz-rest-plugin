@@ -2346,9 +2346,15 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
         if (!item)
         {
             // not found
-            rsp.list.append(errorToMap(ERR_PARAMETER_NOT_AVAILABLE, QString("/sensors/%1/config/%2").arg(id).arg(pi.key()), QString("parameter, %1, not available").arg(pi.key())));
-            rsp.httpStatus = HttpStatusBadRequest;
-            return REQ_READY_SEND;
+            
+            //check for optional command
+            const QStringList optionalKeys = { "sound" };
+            if (!optionalKeys.contains(pi.key()))
+            {
+                rsp.list.append(errorToMap(ERR_PARAMETER_NOT_AVAILABLE, QString("/sensors/%1/config/%2").arg(id).arg(pi.key()), QString("parameter, %1, not available").arg(pi.key())));
+                rsp.httpStatus = HttpStatusBadRequest;
+                return REQ_READY_SEND;
+            }
         }
     }
 
