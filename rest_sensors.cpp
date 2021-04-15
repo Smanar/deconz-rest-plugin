@@ -2207,7 +2207,15 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                     if (map[pi.key()].type() == QVariant::String)
                     {
                         QString panelmode = map[pi.key()].toString();
-                        if (addTaskPanelStatusChanged(task, panelmode))
+                        bool sound = true;
+                        
+                        //RConfigVolume
+                        if (map.contains("sound") && map["sound"].type() == QVariant::Bool)
+                        {
+                            sound = map["sound"].toBool;
+                        }
+                        
+                        if (addTaskPanelStatusChanged(task, panelmode, sound))
                         {
                             // Update too RConfigPanel
                             ResourceItem *item2 = sensor->item(RConfigPanel);
