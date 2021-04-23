@@ -9850,7 +9850,7 @@ void DeRestPluginPrivate::updateSensorNode(const deCONZ::NodeEvent &event)
                                     }
 
                                     // Update RStateDoorState Str value
-                                    item = i->item(RStateDoorState);
+                                    ResourceItem *item = i->item(RStateDoorState);
                                     if (item && item->toString() != str)
                                     {
                                         item->setValue(str);
