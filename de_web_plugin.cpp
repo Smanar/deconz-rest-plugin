@@ -6530,6 +6530,8 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const SensorFi
         sensorNode.addItem(DataTypeString, RStateLockState);
         sensorNode.addItem(DataTypeString, RStateNotification);
         sensorNode.addItem(DataTypeBool, RConfigLock);
+        sensorNode.addItem(DataTypeString, RStateDoorState);
+        sensorNode.addItem(DataTypeString, RStatePin);
     }
     else if (sensorNode.type().endsWith(QLatin1String("Alarm")))
     {
@@ -9678,6 +9680,44 @@ void DeRestPluginPrivate::updateSensorNode(const deCONZ::NodeEvent &event)
 
                                         item->setValue(str);
                                         enqueueEvent(Event(RSensors, RStateLockState, i->id(), item));
+                                        updated = true;
+                                    }
+                                }
+                                else if (ia->id() == 0x0003) // Door state
+                                {
+                                    QString str;
+
+                                    if (ia->numericValue().u8 == 0)
+                                    {
+                                        str = QLatin1String("open");
+                                    }
+                                    else if (ia->numericValue().u8 == 1)
+                                    {
+                                        str = QLatin1String("closed");
+                                    }
+                                    else if (ia->numericValue().u8 == 2)
+                                    {
+                                        str = QLatin1String("error jammed");
+                                    }
+                                    else if (ia->numericValue().u8 == 3)
+                                    {
+                                        str = QLatin1String("error forced open");
+                                    }
+                                    else if (ia->numericValue().u8 == 4)
+                                    {
+                                        str = QLatin1String("error unspecified");
+                                    }
+                                    else
+                                    {
+                                        str = QLatin1String("undefined");
+                                    }
+
+                                    // Update RStateDoorState Str value
+                                    item = i->item(RStateDoorState);
+                                    if (item && item->toString() != str)
+                                    {
+                                        item->setValue(str);
+                                        enqueueEvent(Event(RSensors, RStateDoorState, i->id(), item));
                                         updated = true;
                                     }
                                 }

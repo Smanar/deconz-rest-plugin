@@ -2006,6 +2006,12 @@ bool DeRestPluginPrivate::sendConfigureReportingRequest(BindingTask &bt)
         rq.minInterval = 1;
         rq.maxInterval = 300;
         //rq.reportableChange8bit = 1;
+        
+        rq.dataType = deCONZ::Zcl8BitEnum;;
+        rq.attributeId = 0x0003; // Door state
+        rq.minInterval = 1;
+        rq.maxInterval = 300;
+        //rq.reportableChange8bit = 1;
 
         return sendConfigureReportingRequest(bt, {rq});
     }

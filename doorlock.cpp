@@ -12,6 +12,8 @@
 
 #define OPERATION_EVENT_NOTIFICATON quint8(0x20)
 
+#define COMMAND_READ_PIN quint8(0x06)
+
 const QStringList EventSourceList({"keypad","rf","manual","rfid"});
 const QStringList EventCodeList({
     "Unknown","Lock","Unlock","LockFailureInvalidPINorID","LockFailureInvalidSchedule","UnlockFailureInvalidPINorID","UnlockFailureInvalidSchedule","OneTouchLock","KeyLock",
@@ -32,6 +34,20 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
     }
     
     bool stateUpdated;
+    
+    if (zclFrame.commandId() == COMMAND_READ_PIN &&
+        zclFrame.isClusterCommand() &&
+        (zclFrame.frameControl() & deCONZ::ZclFCDirectionServerToClient))
+    {
+        DBG_Printf(DBG_INFO, "Door lock debug 1\n" );
+    }
+    
+    if (zclFrame.commandId() == COMMAND_READ_PIN &&
+        zclFrame.isClusterCommand() &&
+        !(zclFrame.frameControl() & deCONZ::ZclFCDirectionServerToClient))
+    {
+        DBG_Printf(DBG_INFO, "Door lock debug 2\n" );
+    }
 
     if (zclFrame.commandId() == OPERATION_EVENT_NOTIFICATON &&
         zclFrame.isClusterCommand() &&

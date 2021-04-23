@@ -77,6 +77,8 @@ extern const char *RStateEventDuration;
 extern const char *RStateFire;
 extern const char *RStateFlag;
 extern const char *RStateLockState;
+extern const char *RStateDoorState;
+extern const char *RStatePin;
 extern const char *RStateNotification;
 extern const char *RStateFloorTemperature;
 extern const char *RStateGesture;
