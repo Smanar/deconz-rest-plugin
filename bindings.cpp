@@ -2053,19 +2053,20 @@ bool DeRestPluginPrivate::sendConfigureReportingRequest(BindingTask &bt)
     }
     else if (bt.binding.clusterId == DOOR_LOCK_CLUSTER_ID)
     {
-        rq.dataType = deCONZ::Zcl8BitEnum;;
+        rq.dataType = deCONZ::Zcl8BitEnum;
         rq.attributeId = 0x0000; // Current Lock Position
         rq.minInterval = 1;
         rq.maxInterval = 300;
         //rq.reportableChange8bit = 1;
         
-        rq.dataType = deCONZ::Zcl8BitEnum;;
-        rq.attributeId = 0x0003; // Door state
-        rq.minInterval = 1;
-        rq.maxInterval = 300;
-        //rq.reportableChange8bit = 1;
+        ConfigureReportingRequest rq2;
+        rq2.dataType = deCONZ::Zcl8BitEnum;
+        rq2.attributeId = 0x0003; // Door state
+        rq2.minInterval = 1;
+        rq2.maxInterval = 300;
+        //rq2.reportableChange8bit = 1;
 
-        return sendConfigureReportingRequest(bt, {rq});
+        return sendConfigureReportingRequest(bt, {rq, rq2});
     }
     else if (bt.binding.clusterId == FAN_CONTROL_CLUSTER_ID)
     {
