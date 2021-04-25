@@ -8,11 +8,15 @@
  *
  */
 
+#include <QJsonObject>
+ 
 #include "de_web_plugin_private.h"
 
 #define OPERATION_EVENT_NOTIFICATON quint8(0x20)
 
 #define COMMAND_READ_PIN quint8(0x06)
+#define COMMAND_SET_PIN quint8(0x05)
+#define COMMAND_CLEAR_PIN quint8(0x07)
 
 const QStringList EventSourceList({"keypad","rf","manual","rfid"});
 const QStringList EventCodeList({
@@ -32,27 +36,102 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
     {
         return;
     }
+
+    //Defaut response
+    if (!(zclFrame.frameControl() & deCONZ::ZclFCDisableDefaultResponse))
+    {
+        sendZclDefaultResponse(ind, zclFrame, deCONZ::ZclSuccessStatus);
+    }
     
     bool stateUpdated;
-    
-    if (zclFrame.commandId() == COMMAND_READ_PIN &&
-        zclFrame.isClusterCommand() &&
-        (zclFrame.frameControl() & deCONZ::ZclFCDirectionServerToClient))
-    {
-        DBG_Printf(DBG_INFO, "Door lock debug 1\n" );
-    }
-    
-    if (zclFrame.commandId() == COMMAND_READ_PIN &&
-        zclFrame.isClusterCommand() &&
-        !(zclFrame.frameControl() & deCONZ::ZclFCDirectionServerToClient))
-    {
-        DBG_Printf(DBG_INFO, "Door lock debug 2\n" );
-    }
 
-    if (zclFrame.commandId() == OPERATION_EVENT_NOTIFICATON &&
-        zclFrame.isClusterCommand() &&
-        (zclFrame.frameControl() & deCONZ::ZclFCDirectionServerToClient))
+    if (zclFrame.isClusterCommand() &&
+       (zclFrame.frameControl() & deCONZ::ZclFCDirectionServerToClient))
     {
+        if (zclFrame.commandId() == COMMAND_READ_PIN)
+        {
+            
+            // sample payload : 0300 01 00 04 31323334
+            
+            quint16 length = zclFrame.payload().size() - 4;
+            
+            quint16 userID;
+            quint8 status;
+            quint8 type;
+            QString code;
+            quint8 codeTemp;
+            
+            stream >> userID;
+            stream >> status;
+            stream >> type;
+
+            if (length > 1)
+            {
+                
+                // skip Code lenght, use payload lenght instead
+                stream >> codeTemp;
+                length -= 1;
+                
+                for (; length > 0; length--)
+                {
+                    stream >> codeTemp;
+                    code.append(QChar(codeTemp));
+                }
+            }
+            
+            DBG_Printf(DBG_IAS, "[Door lock] - Read PIN command received, User ID: %d, code: %s, Status: %d, Type %d\n", userID , qPrintable(code) ,status, type);
+
+            QString data = QString("\"%1\":{\"id\":%1,\"status\":%2,\"type\":%3,\"code\":%4}").arg(userID).arg(status).arg(type).arg(code);
+            
+            
+            if (false)
+            {
+                //Transform qsting to json
+                QString data = QLatin1String("{}");
+                
+                QJsonObject jsonObj;
+                QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8());
+
+                // check validity of the document
+                if(!doc.isNull())
+                {
+                    if(doc.isObject())
+                    {
+                        jsonObj = doc.object();        
+                    }
+                    else
+                    {
+                        DBG_Printf(DBG_INFO, "Door lock debug : Not an object\n");
+                    }
+                }
+                else
+                {
+                    DBG_Printf(DBG_INFO, "Door lock debug : Json error\n");
+                }
+                
+                // Make magic
+                QVariantMap json_map = jsonObj.toVariantMap();
+                QVariantMap user = root_map["stats"].toMap();
+                
+     
+                //Transform Json to qstring
+                QJsonDocument doc(jsonObj);
+                QString data = strJson(doc.toJson(QJsonDocument::Compact));
+            }
+
+            
+            ResourceItem *item = sensorNode->item(RStatePin);
+
+            if (item )
+            {
+                item->setValue(data);
+                Event e(RSensors, RStatePin, sensorNode->id(), item);
+                enqueueEvent(e);
+                stateUpdated = true;
+            }
+            
+        }
+        else if (zclFrame.commandId() == OPERATION_EVENT_NOTIFICATON)
         {
             
             QDataStream stream(zclFrame.payload());
@@ -113,11 +192,6 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
         updateSensorEtag(&*sensorNode);
         sensorNode->setNeedSaveDatabase(true);
         queSaveDb(DB_SENSORS, DB_SHORT_SAVE_DELAY);
-    }
-
-    if (!(zclFrame.frameControl() & deCONZ::ZclFCDisableDefaultResponse))
-    {
-        sendZclDefaultResponse(ind, zclFrame, deCONZ::ZclSuccessStatus);
     }
     
 }
