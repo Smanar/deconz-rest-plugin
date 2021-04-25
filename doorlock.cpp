@@ -131,7 +131,7 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
                     }
                     else
                     {
-                        DBG_Printf(DBG_INFO, "[ERROR] - Door lock debug %s > %s", qPrintable(i.key()) , qPrintable(i.value()));
+                        DBG_Printf(DBG_INFO, "[ERROR] - Door lock debug %s > %s", qPrintable(i.key()) , qPrintable(i.value().toString()));
                     }
                 }
      
