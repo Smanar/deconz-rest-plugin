@@ -114,28 +114,23 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
                 }
                 
                 // Make magic
-                //QVariantMap user_list = jsonObj.toVariantMap();
+                QVariantMap user_list = jsonObj.toVariantMap();
                 
-                //const QVariantList list = user_list.toList();
-                //foreach(const QVariant& v, list)
-                //{
-                    //QByteArray serializedValue = serialize(v);
-                    //if(serializedValue.isNull())
-                    //{
-                    //    success = false;
-                    //    break;
-                    //}
-                    //values << serializedValue;
-                //}
-                
-                
-                //QVariantMap json_map = jsonObj.toVariantMap();
-                //QVariantMap user = root_map["stats"].toMap();
-                //foreach(QVariantMap user, json_map)
-                //{
-                //    QVariantMap user = city.toMap();
-                //}
-                
+                foreach(const QVariant& v, user_list)
+                {
+                    if (v.type() == QVariant::List)
+                    {
+                        QVariantList ls = v.toList();
+                        for (int i = 0; i < ls.size(); i++)
+                        {
+                            DBG_Printf(DBG_INFO, "Door lock debug : 778\n");
+                        }
+                    }
+                    else
+                    {
+                        DBG_Printf(DBG_INFO, "Door lock debug : 77\n");
+                    }
+                }
      
                 //Transform Json to qstring
                 //QJsonDocument doc(jsonObj);
