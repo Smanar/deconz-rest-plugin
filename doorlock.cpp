@@ -139,7 +139,7 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
      
                 //Transform Json to qstring
                 //QJsonDocument doc(jsonObj);
-                data = strJson(doc.toJson(QJsonDocument::Compact));
+                //data = strJson(doc.toJson(QJsonDocument::Compact));
             }
 
             
