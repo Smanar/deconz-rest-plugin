@@ -9,6 +9,7 @@
  */
 
 #include <QJsonObject>
+#include <QJsonDocument>
  
 #include "de_web_plugin_private.h"
 
@@ -50,6 +51,8 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
     {
         if (zclFrame.commandId() == COMMAND_READ_PIN)
         {
+            QDataStream stream(zclFrame.payload());
+            stream.setByteOrder(QDataStream::LittleEndian);
             
             // sample payload : 0300 01 00 04 31323334
             
@@ -110,8 +113,15 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
                 }
                 
                 // Make magic
-                QVariantMap json_map = jsonObj.toVariantMap();
-                QVariantMap user = root_map["stats"].toMap();
+                QVariantList user_list = jsonObj.toVariantList();
+                
+                
+                //QVariantMap json_map = jsonObj.toVariantMap();
+                //QVariantMap user = root_map["stats"].toMap();
+                //foreach(QVariantMap user, json_map)
+                //{
+                //    QVariantMap user = city.toMap();
+                //}
                 
      
                 //Transform Json to qstring
