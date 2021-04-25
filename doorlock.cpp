@@ -113,7 +113,19 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
                 }
                 
                 // Make magic
-                QVariantList user_list = jsonObj.toVariantList();
+                QVariantMap user_list = jsonObj.toVariantMap();
+                
+                const QVariantList list = user_list.toList();
+                foreach(const QVariant& v, list)
+                {
+                    //QByteArray serializedValue = serialize(v);
+                    //if(serializedValue.isNull())
+                    //{
+                    //    success = false;
+                    //    break;
+                    //}
+                    //values << serializedValue;
+                }
                 
                 
                 //QVariantMap json_map = jsonObj.toVariantMap();
