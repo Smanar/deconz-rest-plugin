@@ -86,12 +86,20 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
 
             QString data;
             
-            data = QString("\"%1\":{\"id\":%1,\"status\":%2,\"type\":%3,\"code\":%4}").arg(userID).arg(status).arg(type).arg(code);
-            
-            if (false)
+            ResourceItem *item = sensorNode->item(RStatePin);
+
+            if (item && !item->toString().isEmpty())
+            {
+                data = item->toString();
+            }
+            else
+            {
+                data = QLatin1String("{}");
+            }
+
+            if (true)
             {
                 //Transform qsting to json
-                data = QLatin1String("{}");
                 
                 QJsonObject jsonObj;
                 QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8());
@@ -110,25 +118,20 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
                 }
                 else
                 {
-                    DBG_Printf(DBG_INFO, "Door lock debug : Json error\n");
+                    DBG_Printf(DBG_INFO, "Door lock debug : Json error 1\n");
                 }
                 
                 // Make magic
-                QVariantMap user_list = jsonObj.toVariantMap();
-                
-                foreach(const QVariant& v, user_list)
+                for (auto i = jsonObj.constBegin(); i != jsonObj.constEnd(); ++i)       // Loop through cluster objects
                 {
-                    if (v.type() == QVariant::List)
+                    if (i.key().isNull() || i.key().isEmpty())
                     {
-                        QVariantList ls = v.toList();
-                        for (int i = 0; i < ls.size(); i++)
-                        {
-                            DBG_Printf(DBG_INFO, "Door lock debug : 778\n");
-                        }
+                        DBG_Printf(DBG_INFO, "[ERROR] - Door lock debug : Json error 2\n");
+                        continue;
                     }
                     else
                     {
-                        DBG_Printf(DBG_INFO, "Door lock debug : 77\n");
+                        DBG_Printf(DBG_INFO, "[ERROR] - Door lock debug %s > %s", qPrintable(i.key().toString()) , qPrintable(i.value.()toString()));
                     }
                 }
      
@@ -136,11 +139,12 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
                 //QJsonDocument doc(jsonObj);
                 //data = strJson(doc.toJson(QJsonDocument::Compact));
             }
-
             
+            data = QString("\"%1\":{\"id\":%1,\"status\":%2,\"type\":%3,\"code\":%4}").arg(userID).arg(status).arg(type).arg(code);
+
             ResourceItem *item = sensorNode->item(RStatePin);
 
-            if (item )
+            if (item)
             {
                 item->setValue(data);
                 Event e(RSensors, RStatePin, sensorNode->id(), item);
