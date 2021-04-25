@@ -14,6 +14,7 @@
 #include "de_web_plugin_private.h"
 
 #define OPERATION_EVENT_NOTIFICATON quint8(0x20)
+#define PROGRAMMING_EVENT_NOTIFICATON quint8(0x21)
 
 #define COMMAND_READ_PIN quint8(0x06)
 #define COMMAND_SET_PIN quint8(0x05)
@@ -96,13 +97,18 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
             {
                 data = QLatin1String("{}");
             }
+            
+            data = data.replace(QLatin1String("\\\""), QLatin1String("\""));
+            
+            DBG_Printf(DBG_INFO, "Door lock debug : data %s\n", qPrintable(data));
 
             if (true)
             {
                 //Transform qsting to json
                 
                 QJsonObject jsonObj;
-                QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8());
+                QJsonParseError error;
+                QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8() , &error);
 
                 // check validity of the document
                 if(!doc.isNull())
@@ -119,6 +125,7 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
                 else
                 {
                     DBG_Printf(DBG_INFO, "Door lock debug : Json error 1\n");
+                    DBG_Printf(DBG_INFO, "Door lock error: %s at offset: %d (in characters)\n", qPrintable(error.errorString()), error.offset);
                 }
                 
                 // Make magic
@@ -140,7 +147,7 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
                 //data = strJson(doc.toJson(QJsonDocument::Compact));
             }
             
-            data = QString("\"%1\":{\"id\":%1,\"status\":%2,\"type\":%3,\"code\":%4}").arg(userID).arg(status).arg(type).arg(code);
+            data = QString("{\"%1\":{\"id\":%1,\"status\":%2,\"type\":%3,\"code\":%4}}").arg(userID).arg(status).arg(type).arg(code);
 
             if (item)
             {
