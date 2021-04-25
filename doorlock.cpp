@@ -131,7 +131,7 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
                     }
                     else
                     {
-                        DBG_Printf(DBG_INFO, "[ERROR] - Door lock debug %s > %s", qPrintable(i.key().toString()) , qPrintable(i.value.()toString()));
+                        DBG_Printf(DBG_INFO, "[ERROR] - Door lock debug %s > %s", qPrintable(i.key()) , qPrintable(i.value()));
                     }
                 }
      
@@ -141,8 +141,6 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
             }
             
             data = QString("\"%1\":{\"id\":%1,\"status\":%2,\"type\":%3,\"code\":%4}").arg(userID).arg(status).arg(type).arg(code);
-
-            ResourceItem *item = sensorNode->item(RStatePin);
 
             if (item)
             {
