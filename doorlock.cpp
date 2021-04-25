@@ -84,13 +84,14 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
             
             DBG_Printf(DBG_IAS, "[Door lock] - Read PIN command received, User ID: %d, code: %s, Status: %d, Type %d\n", userID , qPrintable(code) ,status, type);
 
-            QString data = QString("\"%1\":{\"id\":%1,\"status\":%2,\"type\":%3,\"code\":%4}").arg(userID).arg(status).arg(type).arg(code);
+            QString data;
             
+            data = QString("\"%1\":{\"id\":%1,\"status\":%2,\"type\":%3,\"code\":%4}").arg(userID).arg(status).arg(type).arg(code);
             
             if (false)
             {
                 //Transform qsting to json
-                QString data = QLatin1String("{}");
+                data = QLatin1String("{}");
                 
                 QJsonObject jsonObj;
                 QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8());
@@ -113,11 +114,11 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
                 }
                 
                 // Make magic
-                QVariantMap user_list = jsonObj.toVariantMap();
+                //QVariantMap user_list = jsonObj.toVariantMap();
                 
-                const QVariantList list = user_list.toList();
-                foreach(const QVariant& v, list)
-                {
+                //const QVariantList list = user_list.toList();
+                //foreach(const QVariant& v, list)
+                //{
                     //QByteArray serializedValue = serialize(v);
                     //if(serializedValue.isNull())
                     //{
@@ -125,7 +126,7 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
                     //    break;
                     //}
                     //values << serializedValue;
-                }
+                //}
                 
                 
                 //QVariantMap json_map = jsonObj.toVariantMap();
@@ -137,8 +138,8 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
                 
      
                 //Transform Json to qstring
-                QJsonDocument doc(jsonObj);
-                QString data = strJson(doc.toJson(QJsonDocument::Compact));
+                //QJsonDocument doc(jsonObj);
+                data = strJson(doc.toJson(QJsonDocument::Compact));
             }
 
             
