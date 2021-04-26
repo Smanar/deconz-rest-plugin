@@ -10,6 +10,7 @@
 
 #include <QJsonObject>
 #include <QJsonDocument>
+#include <QJsonArray>
  
 #include "de_web_plugin_private.h"
 
@@ -95,7 +96,7 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
             }
             else
             {
-                data = QLatin1String("{}");
+                data = QLatin1String("[]");
             }
             
             data = data.replace(QLatin1String("\\\""), QLatin1String("\""));
@@ -108,46 +109,62 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
                 
                 QJsonObject jsonObj;
                 QJsonParseError error;
+                QJsonArray jsonArray;
                 QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8() , &error);
 
                 // check validity of the document
                 if(!doc.isNull())
                 {
-                    if(doc.isObject())
+                    if(doc.isArray())
                     {
-                        jsonObj = doc.object();        
+                        jsonArray = doc.array();        
                     }
                     else
                     {
-                        DBG_Printf(DBG_INFO, "Door lock debug : Not an object\n");
+                        DBG_Printf(DBG_INFO, "Door lock debug : Not an array\n");
                     }
                 }
                 else
                 {
-                    DBG_Printf(DBG_INFO, "Door lock debug : Json error 1\n");
                     DBG_Printf(DBG_INFO, "Door lock error: %s at offset: %d (in characters)\n", qPrintable(error.errorString()), error.offset);
                 }
                 
-                // Make magic
-                for (auto i = jsonObj.constBegin(); i != jsonObj.constEnd(); ++i)       // Loop through cluster objects
+                bool exist = false;
+                foreach (const QJsonValue & v, jsonArray)
                 {
-                    if (i.key().isNull() || i.key().isEmpty())
+                    quint16 id;
+                    jsonObj = v.toObject();
+                    if (!jsonObj.isEmpty() && jsonObj["id"].isDouble())
                     {
-                        DBG_Printf(DBG_INFO, "[ERROR] - Door lock debug : Json error 2\n");
-                        continue;
+                        id = jsonObj["id"].toInt();
+                        
+                        //If exist, update
+                        if (id == userID)
+                        {
+                            jsonObj["status"] = status;
+                            jsonObj["type"] = type;
+                            jsonObj["code"] = code;
+                            
+                            exist = true;
+                        }
+                        
                     }
-                    else
-                    {
-                        DBG_Printf(DBG_INFO, "[ERROR] - Door lock debug %s > %s", qPrintable(i.key()) , qPrintable(i.value().toString()));
-                    }
+                    
+                }
+                
+                //If not exist, add it
+                if (!exist)
+                {
+                    jsonObj.insert("id", QJsonValue::fromVariant(userID));
+                    jsonObj.insert("status", QJsonValue::fromVariant(status));
+                    jsonObj.insert("type", QJsonValue::fromVariant(type));
+                    jsonObj.insert("code", QJsonValue::fromVariant(code));
+                    jsonArray.append(jsonObj);
                 }
      
-                //Transform Json to qstring
-                //QJsonDocument doc(jsonObj);
-                //data = strJson(doc.toJson(QJsonDocument::Compact));
+                //Transform Json array to qstring
+                data = QJsonDocument(jsonArray).toJson(QJsonDocument::Compact));
             }
-            
-            data = QString("{\"%1\":{\"id\":%1,\"status\":%2,\"type\":%3,\"code\":%4}}").arg(userID).arg(status).arg(type).arg(code);
 
             if (item)
             {
