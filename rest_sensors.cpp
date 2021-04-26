@@ -2310,6 +2310,83 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                     }
                 }
             }
+ 
+            // Specil part for ZHAAncillaryControl
+            if (sensor->type() == "ZHAAncillaryControl")
+            {
+                if (rid.suffix == RConfigArmMode)
+                {
+                    if (map[pi.key()].type() == QVariant::String)
+                    {
+                        QString modeArmed = map[pi.key()].toString();
+                        quint8 sn = 0x00;
+                        item = sensor->item(RConfigHostFlags);
+                        if (item)
+                        {
+                            sn = static_cast<quint8>(item->toNumber());
+                        }
+                        
+                        if (addTaskSendArmResponse(task, modeArmed, sn))
+                        {
+                            updated = true;
+                        }
+                        else
+                        {
+                            rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/armed").arg(id), QString("Command error, %1, for parameter, armed").arg(map[pi.key()].toString())));
+                            rsp.httpStatus = HttpStatusBadRequest;
+                            return REQ_READY_SEND;
+                        }
+                    }
+                    else
+                    {
+                        rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/%2").arg(id).arg(pi.key()),
+                                                   QString("invalid value, %1, for parameter %2").arg(map[pi.key()].toString()).arg(pi.key())));
+                        rsp.httpStatus = HttpStatusBadRequest;
+                        return REQ_READY_SEND;
+                    }
+                }
+                if (rid.suffix == RConfigPanel)
+                {
+                    if (map[pi.key()].type() == QVariant::String)
+                    {
+                        QString panelmode = map[pi.key()].toString();
+                        bool sound = true;
+                        
+                        //RConfigVolume
+                        if (map.contains("sound") && map["sound"].type() == QVariant::Bool)
+                        {
+                            sound = map["sound"].toBool();
+                        }
+                        
+                        if (addTaskPanelStatusChanged(task, panelmode, sound))
+                        {
+                            // Update too RConfigPanel
+                            ResourceItem *item2 = sensor->item(RConfigPanel);
+                            item2->setValue(panelmode);
+                            enqueueEvent(Event(RSensors, RConfigPanel, sensor->id(), item2));
+                            // And clear RStateAction
+                            item2 = sensor->item(RStateAction);
+                            item2->setValue(QString(""));
+                            enqueueEvent(Event(RSensors, RStateAction, sensor->id(), item2));
+
+                            updated = true;
+                        }
+                        else
+                        {
+                            rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/panel").arg(id), QString("Command error, %1, for parameter, panel").arg(map[pi.key()].toString())));
+                            rsp.httpStatus = HttpStatusBadRequest;
+                            return REQ_READY_SEND;
+                        }
+                    }
+                    else
+                    {
+                        rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/%2").arg(id).arg(pi.key()),
+                                                   QString("invalid value, %1, for parameter %2").arg(map[pi.key()].toString()).arg(pi.key())));
+                        rsp.httpStatus = HttpStatusBadRequest;
+                        return REQ_READY_SEND;
+                    }
+                }
+            }
 
             //Special part for metering interfaces
             if (sensor->type() == "ZHAConsumption")
@@ -2425,9 +2502,15 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
         if (!item)
         {
             // not found
-            rsp.list.append(errorToMap(ERR_PARAMETER_NOT_AVAILABLE, QString("/sensors/%1/config/%2").arg(id).arg(pi.key()), QString("parameter, %1, not available").arg(pi.key())));
-            rsp.httpStatus = HttpStatusBadRequest;
-            return REQ_READY_SEND;
+            
+            //check for optional command
+            const QStringList optionalKeys = { "sound" };
+            if (!optionalKeys.contains(pi.key()))
+            {
+                rsp.list.append(errorToMap(ERR_PARAMETER_NOT_AVAILABLE, QString("/sensors/%1/config/%2").arg(id).arg(pi.key()), QString("parameter, %1, not available").arg(pi.key())));
+                rsp.httpStatus = HttpStatusBadRequest;
+                return REQ_READY_SEND;
+            }
         }
     }
 
@@ -3843,6 +3926,10 @@ void DeRestPluginPrivate::checkSensorStateTimerFired()
                         enqueueEvent(Event(RSensors, RStateLastUpdated, sensor->id()));
                         updateSensorEtag(sensor);
                     }
+                }
+                else if (sensor->type().endsWith(QLatin1String("AncillaryControl")))
+                {
+                    DBG_Printf(DBG_IAS, "[IAS ACE] - Reseting counter\n");
                 }
 
                 sensor->durationDue = QDateTime();
