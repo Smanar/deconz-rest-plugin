@@ -839,6 +839,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                         return REQ_READY_SEND;
                     }
                 }
+                /*
                 else if (rid.suffix == RStatePin)
                 {
                     bool ok;
@@ -864,7 +865,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                         rsp.httpStatus = HttpStatusBadRequest;
                         return REQ_READY_SEND;
                     }
-                }
+                }*/
                 else if (item->setValue(val))
                 {
                     // TODO: Fix bug
