@@ -113,9 +113,9 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
                 
                 foreach (const QVariant & v, list)
                 {
-                    QVariant map = v.toMap();
+                    QVariantMap map = v.toMap();
                     
-                    if (map.isValid() && map["id"].type() == QVariant::Double)
+                    if (map["id"].type() == QVariant::Double)
                     {
                         id = map["id"].toInt();
                         
