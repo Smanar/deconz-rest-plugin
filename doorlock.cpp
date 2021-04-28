@@ -104,9 +104,9 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
             if (true)
             {
                 //Transform qstring to json
-                QVariant var = json::parse(data);
-                QvariantList list = var.toList();
-                QvariantList list2;
+                QVariant var = Json::parse(data);
+                QVariantList list = var.toList();
+                QVariantList list2;
                 
                 bool exist = false;
                 quint16 id;
@@ -115,7 +115,7 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
                 {
                     QVariant map = v.toMap();
                     
-                    if (!map.isEmpty() && map["id"].isDouble())
+                    if (map.isValid() && map["id"].type() == QVariant::Double)
                     {
                         id = map["id"].toInt();
                         
