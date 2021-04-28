@@ -1530,6 +1530,7 @@ public:
     bool addTaskWarning(TaskItem &task, uint8_t options, uint16_t duration);
     // Danalock support. To control the lock from the REST API, you need to create a new routine addTaskDoorLock() in zcl_tasks.cpp, cf. the addTaskWarning() I created to control the Siren.
     bool addTaskDoorLockUnlock(TaskItem &task, uint8_t cmd);
+    bool addTaskDoorLockGetPin(TaskItem &task, quint16 userID);
     bool addTaskAddToGroup(TaskItem &task, uint16_t groupId);
     bool addTaskViewGroup(TaskItem &task, uint16_t groupId);
     bool addTaskRemoveFromGroup(TaskItem &task, uint16_t groupId);

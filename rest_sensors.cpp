@@ -839,6 +839,32 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                         return REQ_READY_SEND;
                     }
                 }
+                else if (rid.suffix == RConfigPin)
+                {
+                    bool ok;
+
+                    if (map[pi.key()].type() == QVariant::Double)
+                    {
+                        if (addTaskDoorLockGetPin(map[pi.key()].toInt()))
+                        {
+                            rspItemState[QString("/sensors/%1/config/lock").arg(id)] = map["lock"];
+                            rspItem["success"] = rspItemState;
+                            updated = true;
+                        }
+                        else
+                        {
+                            rsp.list.append(errorToMap(ERR_ACTION_ERROR, QString("/sensors/%1/config/lock").arg(id), QString("Command error, %1, for parameter, lock").arg(map[pi.key()].toString())));
+                            rsp.httpStatus = HttpStatusBadRequest;
+                            return REQ_READY_SEND;
+                        }
+                    }
+                    else
+                    {
+                        rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/lock").arg(id), QString("invalid value, %1, for parameter, lock").arg(val.toString())));
+                        rsp.httpStatus = HttpStatusBadRequest;
+                        return REQ_READY_SEND;
+                    }
+                }
                 else if (item->setValue(val))
                 {
                     // TODO: Fix bug
@@ -3185,7 +3211,8 @@ bool DeRestPluginPrivate::sensorToMap(const Sensor *sensor, QVariantMap &map, co
             }
             else if (rid.suffix == RStatePin)
             {
-                QString pin = item->toString().replace(QLatin1String("\\\""), QLatin1String("\""));
+                QString pin = item->toString();
+                pin = pin.replace(QLatin1String("\\\""), QLatin1String("\""));
                 QVariant var = Json::parse(pin);
                 state[key] = var;//pin.toVariantMap();
             }

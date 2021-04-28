@@ -220,3 +220,41 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
     }
     
 }
+
+
+/*! Add doorlock Get Pin task to the queue.
+
+    \param task - the task item
+    \return true - on success
+            false - on error
+ */
+bool DeRestPluginPrivate::addTaskDoorLockGetPin(TaskItem &task, quint16 userID)
+{
+    task.taskType = TaskDoorUnlock;
+
+    task.req.setClusterId(DOOR_LOCK_CLUSTER_ID);
+    task.req.setProfileId(HA_PROFILE_ID);
+
+    task.zclFrame.payload().clear();
+    task.zclFrame.setSequenceNumber(zclSeq++);
+    task.zclFrame.setCommandId(COMMAND_READ_PIN); // Get Pin
+    task.zclFrame.setFrameControl(deCONZ::ZclFCClusterCommand |
+                                  deCONZ::ZclFCDirectionClientToServer |
+                                  deCONZ::ZclFCDisableDefaultResponse);
+
+    { // payload
+        QDataStream stream(&task.zclFrame.payload(), QIODevice::WriteOnly);
+        stream.setByteOrder(QDataStream::LittleEndian);
+        
+        stream << userID;
+    }
+
+    { // ZCL frame
+        task.req.asdu().clear(); // cleanup old request data if there is any
+        QDataStream stream(&task.req.asdu(), QIODevice::WriteOnly);
+        stream.setByteOrder(QDataStream::LittleEndian);
+        task.zclFrame.writeToStream(stream);
+    }
+
+    return addTask(task);
+}
