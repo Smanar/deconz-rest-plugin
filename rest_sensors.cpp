@@ -3186,7 +3186,7 @@ bool DeRestPluginPrivate::sensorToMap(const Sensor *sensor, QVariantMap &map, co
             else if (rid.suffix == RStatePin)
             {
                 const QString pin = item->toString().replace(QLatin1String("\\\""), QLatin1String("\""));
-                QVariant var = json::parse(pin);
+                QVariant var = Json::parse(pin);
                 state[key] = var;//pin.toVariantMap();
             }
             else
