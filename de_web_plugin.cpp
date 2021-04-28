@@ -495,6 +495,7 @@ static const SupportedDevice supportedDevices[] = {
     { VENDOR_KWIKSET, "SMARTCODE_CONVERT_GEN1", zenMacPrefix }, // Kwikset 914 ZigBee smart lock
     { VENDOR_DSR, "easyCodeTouch_v1", onestiPrefix }, // EasyAccess EasyCodeTouch
     { VENDOR_EMBER, "HC-SLM-1", silabs4MacPrefix }, // Wattle Door Lock Pro
+    { VENDOR_YUNDING, "Ford", silabs9MacPrefix }, // Wyze Door Lock
     { VENDOR_EMBER, "TS1001", silabs5MacPrefix }, // LIDL Livarno Lux Remote Control HG06323
     { VENDOR_EMBER, "TS1001", silabs7MacPrefix }, // LIDL Livarno Lux Remote Control HG06323
 
@@ -5671,6 +5672,7 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const deCONZ::
                             modelId == QLatin1String("YRD220/240 TSDB") ||
                             modelId == QLatin1String("HC-SLM-1") || // Wattle Door Lock Pro
                             modelId == QLatin1String("easyCodeTouch_v1") || // EasyAccess EasyCodeTouch
+                            modelId == QLatin1String("Ford") || // Wyze Door Lock
                             modelId == QLatin1String("ID Lock 150"))
                         {
                             fpDoorLockSensor.inClusters.push_back(DOOR_LOCK_CLUSTER_ID);

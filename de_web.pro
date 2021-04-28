@@ -116,6 +116,7 @@ HEADERS  = bindings.h \
            poll_manager.h \
            product_match.h \
            read_files.h \
+           doorlock.h \
            resource.h \
            resourcelinks.h \
            rest_devices.h \

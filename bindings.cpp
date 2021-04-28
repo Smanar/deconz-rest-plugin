@@ -2549,6 +2549,9 @@ void DeRestPluginPrivate::checkLightBindingsForAttributeReporting(LightNode *lig
         else if (lightNode->manufacturerCode() == VENDOR_YALE)
         {
         }
+        else if (lightNode->manufacturerCode() == VENDOR_YUNDING)
+        {
+        }
         else if (lightNode->manufacturer() == QLatin1String("NIKO NV"))
         {
         }
@@ -2762,6 +2765,8 @@ bool DeRestPluginPrivate::checkSensorBindingsForAttributeReporting(Sensor *senso
         sensor->modelId() == QLatin1String("YRD226/246 TSDB") ||
         sensor->modelId() == QLatin1String("YRD220/240 TSDB") ||
         sensor->modelId() == QLatin1String("easyCodeTouch_v1") ||
+        // Yunding
+        sensor->modelId() == QLatin1String("Ford") || // Wyze Door Lock
         // Home Control AS
         sensor->modelId() == QLatin1String("HC-SLM-1") ||
         // ubisys

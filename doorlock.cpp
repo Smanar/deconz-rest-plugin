@@ -7,12 +7,9 @@
  * the LICENSE.txt file.
  *
  */
-
-#include <QJsonObject>
-#include <QJsonDocument>
-#include <QJsonArray>
  
 #include "de_web_plugin_private.h"
+#include "json.h"
 
 #define OPERATION_EVENT_NOTIFICATON quint8(0x20)
 #define PROGRAMMING_EVENT_NOTIFICATON quint8(0x21)
@@ -26,6 +23,7 @@ const QStringList EventCodeList({
     "Unknown","Lock","Unlock","LockFailureInvalidPINorID","LockFailureInvalidSchedule","UnlockFailureInvalidPINorID","UnlockFailureInvalidSchedule","OneTouchLock","KeyLock",
     "KeyUnlock","AutoLock","ScheduleLock","ScheduleUnlock","Manual Lock","Manual Unlock","Non-Access User Operational Event"
     });
+
 
 void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame)
 {
@@ -105,65 +103,48 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
 
             if (true)
             {
-                //Transform qsting to json
-                
-                QJsonObject jsonObj;
-                QJsonParseError error;
-                QJsonArray jsonArray;
-                QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8() , &error);
-
-                // check validity of the document
-                if(!doc.isNull())
-                {
-                    if(doc.isArray())
-                    {
-                        jsonArray = doc.array();        
-                    }
-                    else
-                    {
-                        DBG_Printf(DBG_INFO, "Door lock debug : Not an array\n");
-                    }
-                }
-                else
-                {
-                    DBG_Printf(DBG_INFO, "Door lock error: %s at offset: %d (in characters)\n", qPrintable(error.errorString()), error.offset);
-                }
+                //Transform qstring to json
+                QVariant var = json::parse(data);
+                QvariantList list = var.toList();
+                QvariantList list2;
                 
                 bool exist = false;
-                foreach (const QJsonValue & v, jsonArray)
+                quint16 id;
+                
+                foreach (const QVariant & v, list)
                 {
-                    quint16 id;
-                    jsonObj = v.toObject();
-                    if (!jsonObj.isEmpty() && jsonObj["id"].isDouble())
+                    QVariant map = v.toMap();
+                    
+                    if (!map.isEmpty() && map["id"].isDouble())
                     {
-                        id = jsonObj["id"].toInt();
+                        id = map["id"].toInt();
                         
                         //If exist, update
                         if (id == userID)
                         {
-                            jsonObj["status"] = status;
-                            jsonObj["type"] = type;
-                            jsonObj["code"] = code;
+                            map["status"] = status;
+                            map["type"] = type;
+                            map["code"] = code;
                             
                             exist = true;
                         }
-                        
                     }
-                    
+                    list2.append(map);
                 }
                 
                 //If not exist, add it
                 if (!exist)
                 {
-                    jsonObj.insert("id", QJsonValue::fromVariant(userID));
-                    jsonObj.insert("status", QJsonValue::fromVariant(status));
-                    jsonObj.insert("type", QJsonValue::fromVariant(type));
-                    jsonObj.insert("code", QJsonValue::fromVariant(code));
-                    jsonArray.append(jsonObj);
+                    QVariantMap map2;
+                    map2.insert("id", userID);
+                    map2.insert("status",status);
+                    map2.insert("type", type);
+                    map2.insert("code", code);
+                    list2.append(map2);
                 }
      
                 //Transform Json array to qstring
-                data = QJsonDocument(jsonArray).toJson(QJsonDocument::Compact);
+                data = Json::serialize(list2);
             }
 
             if (item)

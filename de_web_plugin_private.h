@@ -401,6 +401,7 @@ using namespace deCONZ::literals;
 #define VENDOR_HANGZHOU_IMAGIC      0x123B
 #define VENDOR_SAMJIN               0x1241
 #define VENDOR_DANFOSS              0x1246
+#define VENDOR_YUNDING              0x125A
 #define VENDOR_NIKO_NV              0x125F
 #define VENDOR_KONKE                0x1268
 #define VENDOR_SHYUGJ_TECHNOLOGY    0x126A
