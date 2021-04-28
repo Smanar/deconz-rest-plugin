@@ -839,7 +839,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                         return REQ_READY_SEND;
                     }
                 }
-                else if (rid.suffix == RConfigPin)
+                else if (rid.suffix == RStatePin)
                 {
                     bool ok;
 
