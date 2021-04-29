@@ -200,7 +200,7 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
 
             if (item)
             {
-                char s[4];
+                char s[5];
                 sprintf(s, "%04d", pin);
                 QString action = QString("source:%1,code:%2,pin:%3").arg(sourcename).arg(codename).arg(s);
                 item->setValue(action);
