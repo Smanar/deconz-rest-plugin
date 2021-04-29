@@ -198,10 +198,11 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
             
             ResourceItem *item = sensorNode->item(RStateNotification);
 
-            if (item )
+            if (item)
             {
-                QString action;
-                sprintf(action, "source:%s,code:%s,pin:%04d", sourcename, codename, pin);
+                char s[4];
+                sprintf(s, "%04d", pin);
+                QString action = QString("source:%1,code:%2,pin:%3").arg(sourcename).arg(codename).arg(s);
                 item->setValue(action);
                 Event e(RSensors, RStateNotification, sensorNode->id(), item);
                 enqueueEvent(e);
