@@ -24,6 +24,7 @@
 #include <deconz.h>
 #include "resource.h"
 #include "daylight.h"
+#include "doorlock.h"
 #include "event.h"
 #include "green_power.h"
 #include "resource.h"

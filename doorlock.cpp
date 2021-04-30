@@ -10,13 +10,7 @@
  
 #include "de_web_plugin_private.h"
 #include "json.h"
-
-#define OPERATION_EVENT_NOTIFICATON quint8(0x20)
-#define PROGRAMMING_EVENT_NOTIFICATON quint8(0x21)
-
-#define COMMAND_READ_PIN quint8(0x06)
-#define COMMAND_SET_PIN quint8(0x05)
-#define COMMAND_CLEAR_PIN quint8(0x07)
+#include "doorlock.h"
 
 const QStringList EventSourceList({"keypad","rf","manual","rfid"});
 const QStringList EventCodeList({
