@@ -89,15 +89,15 @@ int DeRestPluginPrivate::handleSensorsApi(const ApiRequest &req, ApiResponse &rs
     {
         return changeSensorState(req, rsp);
     }
+    // GET, PUT, DELETE /api/<apikey>/sensors/<id>/state/pin
+    else if ((req.path.size() == 6) && (req.hdr.method() == "PUT" || req.hdr.method() == "GET" || req.hdr.method() == "DELETE") && (req.path[4] == "state") && (req.path[5] == "pin"))
+    {
+        return changeDoorLockPin(req, rsp);
+    }
     // POST, DELETE /api/<apikey>/sensors/<id>/config/schedule/Wbbb
     else if ((req.path.size() == 7) && (req.hdr.method() == "POST" || req.hdr.method() == "DELETE") && (req.path[4] == "config") && (req.path[5] == "schedule"))
     {
         return changeThermostatSchedule(req, rsp);
-    }
-    // POST, DELETE /api/<apikey>/sensors/<id>/state/pin
-    else if ((req.path.size() == 6) && (req.hdr.method() == "POST" || req.hdr.method() == "DELETE") && (req.path[4] == "state") && (req.path[5] == "pin"))
-    {
-        return changeDoorLockPin(req, rsp);
     }
 
     return REQ_NOT_HANDLED;
@@ -2574,14 +2574,13 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
     return REQ_READY_SEND;
 }
 
-/*! POST, DELETE /api/<apikey>/sensors/<id>/state/pin
+/*! PUT, POST /api/<apikey>/sensors/<id>/state/pin
     \return REQ_READY_SEND
             REQ_NOT_HANDLED
  */
 int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &rsp)
 {
     rsp.httpStatus = HttpStatusOk;
-    quint16 userID;
     bool ok = true;
     bool correct = false;
     QVariantMap rspItem;
@@ -2604,40 +2603,57 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
         rsp.list.append(errorToMap(ERR_RESOURCE_NOT_AVAILABLE, QString("/sensors/%1/state/pin").arg(id), QString("resource, /sensors/%1/state/pin, not available").arg(id)));
         return REQ_READY_SEND;
     }
-
-    if (req.hdr.method() == "POST" || req.hdr.method() == "PUT")
+    
+    // Check value
+    quint16 userID = req.path[6].toUInt(&ok);
+    if (!ok)
     {
-        
-        TaskItem task;
-        task.req.dstAddress() = sensor->address();
-        task.req.setTxOptions(deCONZ::ApsTxAcknowledgedTransmission);
-        task.req.setDstEndpoint(sensor->fingerPrint().endpoint);
-        task.req.setSrcEndpoint(getSrcEndpoint(sensor, task.req));
-        task.req.setDstAddressMode(deCONZ::ApsExtAddress);
-        
-        QVariant var = Json::parse(req.content, ok);
-        if (!ok)
-        {
-            rsp.list.append(errorToMap(ERR_INVALID_JSON, QString("/sensors/%1/config/schedule/%2").arg(id).arg(req.path[6]), QString("body contains invalid JSON")));
-            rsp.httpStatus = HttpStatusBadRequest;
-            return REQ_READY_SEND;
-        }
-        
-        QVariantMap map = var.toMap();
+        rsp.httpStatus = HttpStatusNotFound;
+        rsp.list.append(errorToMap(ERR_INVALID_JSON, QString("/sensors/%1/state/pin").arg(id), QString("resource, /sensors/%1/state/pin, wrong User ID").arg(id)));
+        return REQ_READY_SEND;
+    }
+    
+    // Create task
+    TaskItem task;
+    task.req.dstAddress() = sensor->address();
+    task.req.setTxOptions(deCONZ::ApsTxAcknowledgedTransmission);
+    task.req.setDstEndpoint(sensor->fingerPrint().endpoint);
+    task.req.setSrcEndpoint(getSrcEndpoint(sensor, task.req));
+    task.req.setDstAddressMode(deCONZ::ApsExtAddress);
+    
+    QVariantMap map;
 
-        if (map.contains("get"))
+    if (req.hdr.method() == "GET")
+    {        
+        if (!addTaskDoorLockPin(task, COMMAND_READ_PIN, userID, map))
         {
-            if (map["get"].type() == QVariant::Double)
+            rspItem["success"] = QString("/sensors/%1/state/pin get user %1").arg(id).arg(userID);
+            rsp.list.append(rspItem);
+            correct = true;
+        }
+    }
+    else if (req.hdr.method() == "PUT")
+    {
+        QVariant var = Json::parse(req.content, ok);
+        map = var.toMap();
+    
+        if (map.contains("status") && map.contains("type") && map.contains("code"))
+        {
+            if (!addTaskDoorLockPin(task, COMMAND_SET_PIN, userID, map))
             {
-                userID = map["get"].toInt();
-                
-                if (!addTaskDoorLockGetPin(task,userID))
-                {
-                    rspItem["success"] = QString("/sensors/%1/state/pin get user %1").arg(id).arg(userID);
-                    rsp.list.append(rspItem);
-                    correct = true;
-                }
+                rspItem["success"] = QString("/sensors/%1/state/pin put user %1").arg(id).arg(userID);
+                rsp.list.append(rspItem);
+                correct = true;
             }
+        }
+    }
+    else if (req.hdr.method() == "DELETE")
+    {        
+        if (!addTaskDoorLockPin(task, COMMAND_CLEAR_PIN, userID, map))
+        {
+            rspItem["success"] = QString("/sensors/%1/state/pin d user %1").arg(id).arg(userID);
+            rsp.list.append(rspItem);
+            correct = true;
         }
     }
     

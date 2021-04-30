@@ -230,7 +230,7 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
     \return true - on success
             false - on error
  */
-bool DeRestPluginPrivate::addTaskDoorLockGetPin(TaskItem &task, quint16 userID)
+bool DeRestPluginPrivate::addTaskDoorLockPin(TaskItem &task, quint8 command, quint16 userID, QVariantMap map)
 {
     task.taskType = TaskDoorUnlock;
 
@@ -239,7 +239,7 @@ bool DeRestPluginPrivate::addTaskDoorLockGetPin(TaskItem &task, quint16 userID)
 
     task.zclFrame.payload().clear();
     task.zclFrame.setSequenceNumber(zclSeq++);
-    task.zclFrame.setCommandId(COMMAND_READ_PIN); // Get Pin
+    task.zclFrame.setCommandId(command); // Get Pin
     task.zclFrame.setFrameControl(deCONZ::ZclFCClusterCommand |
                                   deCONZ::ZclFCDirectionClientToServer |
                                   deCONZ::ZclFCDisableDefaultResponse);
@@ -249,6 +249,31 @@ bool DeRestPluginPrivate::addTaskDoorLockGetPin(TaskItem &task, quint16 userID)
         stream.setByteOrder(QDataStream::LittleEndian);
         
         stream << userID;
+        
+        if (command == COMMAND_SET_PIN)
+        {
+            bool ok2;
+            map["mode"].toUInt(&ok);
+            quint8 status;
+            quint8 type;
+            
+            status = static_cast<qint8>(map["status"].toUInt(&ok2));
+            if (!ok2) { return false; }
+            type = static_cast<qint8>(map["type"].toUInt(&ok2));
+            if (!ok2) { return false; }
+
+            stream << status;
+            stream << type;
+
+            const QByteArray id = map["code"].toString().toLatin1();
+            const quint8 length = id.length();
+            
+            stream << length;
+            for (uint i = 0; i < length; i++)
+            {
+                stream << (quint8) id[i];
+            }
+        }
     }
 
     { // ZCL frame
