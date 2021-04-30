@@ -2582,7 +2582,8 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
 {
     rsp.httpStatus = HttpStatusOk;
     quint16 userID;
-    bool ok;
+    bool ok = true;
+    bool correct = false;
     QVariantMap rspItem;
 
     // Get the /sensors/id resource.
@@ -2604,9 +2605,16 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
         return REQ_READY_SEND;
     }
 
-    // Check body
-    if (req.hdr.method() == "POST")
+    if (req.hdr.method() == "POST" || req.hdr.method() == "PUT")
     {
+        
+        TaskItem task;
+        task.req.dstAddress() = sensor->address();
+        task.req.setTxOptions(deCONZ::ApsTxAcknowledgedTransmission);
+        task.req.setDstEndpoint(sensor->fingerPrint().endpoint);
+        task.req.setSrcEndpoint(getSrcEndpoint(sensor, task.req));
+        task.req.setDstAddressMode(deCONZ::ApsExtAddress);
+        
         QVariant var = Json::parse(req.content, ok);
         if (!ok)
         {
@@ -2616,42 +2624,36 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
         }
         
         QVariantMap map = var.toMap();
-        
-        bool correct = false;
 
         if (map.contains("get"))
         {
             if (map["get"].type() == QVariant::Double)
             {
                 userID = map["get"].toInt();
-                correct = true;
                 
-                rspItem["success"] = QString("/sensors/%1/state/pin get user %1").arg(id).arg(userID);
-                rsp.list.append(rspItem);
+                if (!addTaskDoorLockGetPin(task,userID))
+                {
+                    rspItem["success"] = QString("/sensors/%1/state/pin get user %1").arg(id).arg(userID);
+                    rsp.list.append(rspItem);
+                    correct = true;
+                }
             }
         }
+    }
     
-        if (!correct)
-        {
-            rsp.list.append(errorToMap(ERR_INVALID_JSON, QString("/sensors/%1/state/pin").arg(id), QString("parametre problems")));
-            rsp.httpStatus = HttpStatusBadRequest;
-            return REQ_READY_SEND;
-        }
+    if (!correct)
+    {
+        rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/state/pin").arg(id), QString("parametre problems")));
+        rsp.httpStatus = HttpStatusBadRequest;
+        return REQ_READY_SEND;
     }
 
     if (req.sock)
     {
         userActivity();
     }
-    
-    TaskItem task;
-    task.req.dstAddress() = sensor->address();
-    task.req.setTxOptions(deCONZ::ApsTxAcknowledgedTransmission);
-    task.req.setDstEndpoint(sensor->fingerPrint().endpoint);
-    task.req.setSrcEndpoint(getSrcEndpoint(sensor, task.req));
-    task.req.setDstAddressMode(deCONZ::ApsExtAddress);
 
-    if (!addTaskDoorLockGetPin(task,userID));
+    if (!addTaskDoorLockGetPin(task,userID))
     {
         rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/state/pin").arg(id), QString("Command error")));
         rsp.httpStatus = HttpStatusBadRequest;
