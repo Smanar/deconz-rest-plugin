@@ -2653,13 +2653,6 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
         userActivity();
     }
 
-    if (!addTaskDoorLockGetPin(task,userID))
-    {
-        rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/state/pin").arg(id), QString("Command error")));
-        rsp.httpStatus = HttpStatusBadRequest;
-        return REQ_READY_SEND;
-    }
-
     processTasks();
 
     return REQ_READY_SEND;
