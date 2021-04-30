@@ -253,7 +253,6 @@ bool DeRestPluginPrivate::addTaskDoorLockPin(TaskItem &task, quint8 command, qui
         if (command == COMMAND_SET_PIN)
         {
             bool ok2;
-            map["mode"].toUInt(&ok);
             quint8 status;
             quint8 type;
             
