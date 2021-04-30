@@ -2582,7 +2582,7 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
 {
     rsp.httpStatus = HttpStatusOk;
     quint16 userID;
-    const bool ok;
+    bool ok;
     QVariantMap rspItem;
 
     // Get the /sensors/id resource.
@@ -2643,8 +2643,15 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
     {
         userActivity();
     }
+    
+    TaskItem task;
+    task.req.dstAddress() = sensor->address();
+    task.req.setTxOptions(deCONZ::ApsTxAcknowledgedTransmission);
+    task.req.setDstEndpoint(sensor->fingerPrint().endpoint);
+    task.req.setSrcEndpoint(getSrcEndpoint(sensor, task.req));
+    task.req.setDstAddressMode(deCONZ::ApsExtAddress);
 
-    if (!addTaskDoorLockGetPin(userID);
+    if (!addTaskDoorLockGetPin(task,userID);
     {
         rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/state/pin").arg(id)), QString("Command error")));
         rsp.httpStatus = HttpStatusBadRequest;
