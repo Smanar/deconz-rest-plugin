@@ -2633,7 +2633,7 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
     
         if (!correct)
         {
-            rsp.list.append(errorToMap(ERR_INVALID_JSON, QString("/sensors/%1/state/pin").arg(id)), QString("parametre problems")));
+            rsp.list.append(errorToMap(ERR_INVALID_JSON, QString("/sensors/%1/state/pin").arg(id), QString("parametre problems")));
             rsp.httpStatus = HttpStatusBadRequest;
             return REQ_READY_SEND;
         }
@@ -2651,9 +2651,9 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
     task.req.setSrcEndpoint(getSrcEndpoint(sensor, task.req));
     task.req.setDstAddressMode(deCONZ::ApsExtAddress);
 
-    if (!addTaskDoorLockGetPin(task,userID);
+    if (!addTaskDoorLockGetPin(task,userID));
     {
-        rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/state/pin").arg(id)), QString("Command error")));
+        rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/state/pin").arg(id), QString("Command error")));
         rsp.httpStatus = HttpStatusBadRequest;
         return REQ_READY_SEND;
     }
