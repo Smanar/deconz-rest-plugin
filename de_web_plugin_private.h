@@ -1196,6 +1196,7 @@ public:
     int deleteSensor(const ApiRequest &req, ApiResponse &rsp);
     int changeSensorConfig(const ApiRequest &req, ApiResponse &rsp);
     int changeSensorState(const ApiRequest &req, ApiResponse &rsp);
+    int changeDoorLockPin(const ApiRequest &req, ApiResponse &rsp);
     int changeThermostatSchedule(const ApiRequest &req, ApiResponse &rsp);
     int createSensor(const ApiRequest &req, ApiResponse &rsp);
     int getGroupIdentifiers(const ApiRequest &req, ApiResponse &rsp);

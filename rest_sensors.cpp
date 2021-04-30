@@ -94,6 +94,11 @@ int DeRestPluginPrivate::handleSensorsApi(const ApiRequest &req, ApiResponse &rs
     {
         return changeThermostatSchedule(req, rsp);
     }
+    // POST, DELETE /api/<apikey>/sensors/<id>/state/pin
+    else if ((req.path.size() == 6) && (req.hdr.method() == "POST" || req.hdr.method() == "DELETE") && (req.path[4] == "state") && (req.path[5] == "pin"))
+    {
+        return changeDoorLockPin(req, rsp);
+    }
 
     return REQ_NOT_HANDLED;
 }
@@ -839,33 +844,6 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                         return REQ_READY_SEND;
                     }
                 }
-                /*
-                else if (rid.suffix == RStatePin)
-                {
-                    bool ok;
-
-                    if (map[pi.key()].type() == QVariant::Double)
-                    {
-                        if (addTaskDoorLockGetPin(map[pi.key()].toInt()))
-                        {
-                            rspItemState[QString("/sensors/%1/config/lock").arg(id)] = map["lock"];
-                            rspItem["success"] = rspItemState;
-                            updated = true;
-                        }
-                        else
-                        {
-                            rsp.list.append(errorToMap(ERR_ACTION_ERROR, QString("/sensors/%1/config/lock").arg(id), QString("Command error, %1, for parameter, lock").arg(map[pi.key()].toString())));
-                            rsp.httpStatus = HttpStatusBadRequest;
-                            return REQ_READY_SEND;
-                        }
-                    }
-                    else
-                    {
-                        rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/lock").arg(id), QString("invalid value, %1, for parameter, lock").arg(val.toString())));
-                        rsp.httpStatus = HttpStatusBadRequest;
-                        return REQ_READY_SEND;
-                    }
-                }*/
                 else if (item->setValue(val))
                 {
                     // TODO: Fix bug
@@ -2589,6 +2567,88 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
     {
         sensor->setNeedSaveDatabase(true);
         queSaveDb(DB_SENSORS, DB_SHORT_SAVE_DELAY);
+    }
+
+    processTasks();
+
+    return REQ_READY_SEND;
+}
+
+/*! POST, DELETE /api/<apikey>/sensors/<id>/state/pin
+    \return REQ_READY_SEND
+            REQ_NOT_HANDLED
+ */
+int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &rsp)
+{
+    rsp.httpStatus = HttpStatusOk;
+    quint16 userID;
+    QVariantMap rspItem;
+
+    // Get the /sensors/id resource.
+    QString id = req.path[3];
+    Sensor *sensor = id.length() < MIN_UNIQUEID_LENGTH ? getSensorNodeForId(id) : getSensorNodeForUniqueId(id);
+    if (!sensor || (sensor->deletedState() == Sensor::StateDeleted))
+    {
+        rsp.httpStatus = HttpStatusNotFound;
+        rsp.list.append(errorToMap(ERR_RESOURCE_NOT_AVAILABLE, QString("/sensors/%1").arg(id), QString("resource, /sensors/%1, not available").arg(id)));
+        return REQ_READY_SEND;
+    }
+
+    // Check that it has state/pin.
+    ResourceItem *item = sensor->item(RStatePin);
+    if (!item)
+    {
+        rsp.httpStatus = HttpStatusNotFound;
+        rsp.list.append(errorToMap(ERR_RESOURCE_NOT_AVAILABLE, QString("/sensors/%1/state/pin").arg(id), QString("resource, /sensors/%1/state/pin, not available").arg(id)));
+        return REQ_READY_SEND;
+    }
+
+    // Check body
+    if (req.hdr.method() == "POST")
+    {
+        QVariant var = Json::parse(req.content, ok);
+        if (!ok)
+        {
+            rsp.list.append(errorToMap(ERR_INVALID_JSON, QString("/sensors/%1/config/schedule/%2").arg(id).arg(req.path[6]), QString("body contains invalid JSON")));
+            rsp.httpStatus = HttpStatusBadRequest;
+            return REQ_READY_SEND;
+        }
+        
+        QVariant var = Json::parse(req.content, ok);
+        QVariantMap map = var.toMap();
+        
+        const bool correct = false;
+
+        if (map.contains("get"))
+        {
+            if (map["get"].type() == QVariant::Double)
+            {
+                userID = map["get"].toInt();
+                correct = true;
+                
+                rspItem["success"] = QString("/sensors/%1/state/pin get user %1").arg(id).arg(userID);
+                rsp.list.append(rspItem);
+            }
+        }
+    
+        if (!correct)
+        {
+            rsp.list.append(errorToMap(ERR_INVALID_JSON, QString("/sensors/%1/state/pin").arg(id)), QString("parametre problems")));
+            rsp.httpStatus = HttpStatusBadRequest;
+            return REQ_READY_SEND;
+        }
+    }
+
+    if (req.sock)
+    {
+        userActivity();
+    }
+
+    if (!addTaskDoorLockGetPin(userID);
+    {
+        rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/state/pin").arg(id)), QString("Command error")));
+        rsp.httpStatus = HttpStatusBadRequest;
+        return REQ_READY_SEND;
     }
 
     processTasks();
