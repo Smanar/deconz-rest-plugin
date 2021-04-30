@@ -2582,6 +2582,7 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
 {
     rsp.httpStatus = HttpStatusOk;
     quint16 userID;
+    const bool ok;
     QVariantMap rspItem;
 
     // Get the /sensors/id resource.
@@ -2614,10 +2615,9 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
             return REQ_READY_SEND;
         }
         
-        QVariant var = Json::parse(req.content, ok);
         QVariantMap map = var.toMap();
         
-        const bool correct = false;
+        bool correct = false;
 
         if (map.contains("get"))
         {
