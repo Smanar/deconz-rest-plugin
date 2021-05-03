@@ -2604,6 +2604,16 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
         return REQ_READY_SEND;
     }
     
+    QVariantMap map;
+    QVariant var = Json::parse(req.content, ok);
+    if (!ok)
+    {
+        rsp.httpStatus = HttpStatusNotFound;
+        rsp.list.append(errorToMap(ERR_INVALID_JSON, QString("/sensors/%1/state/pin").arg(id), QString("resource, /sensors/%1/state/pin, can't parse Json").arg(id)));
+        return REQ_READY_SEND;
+    }
+    map = var.toMap();
+    
     // Check value
     quint16 userID = 0;
     if (map.contains("id") && map["id"].type() == QVariant::Double)
@@ -2624,8 +2634,6 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
     task.req.setDstEndpoint(sensor->fingerPrint().endpoint);
     task.req.setSrcEndpoint(getSrcEndpoint(sensor, task.req));
     task.req.setDstAddressMode(deCONZ::ApsExtAddress);
-    
-    QVariantMap map;
 
     if (req.hdr.method() == "GET")
     {        
@@ -2638,9 +2646,6 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
     }
     else if (req.hdr.method() == "PUT")
     {
-        QVariant var = Json::parse(req.content, ok);
-        map = var.toMap();
-    
         if (map.contains("id") && map.contains("status") && map.contains("type") && map.contains("code"))
         {
             if (!addTaskDoorLockPin(task, COMMAND_SET_PIN, userID, map))
