@@ -89,8 +89,13 @@ int DeRestPluginPrivate::handleSensorsApi(const ApiRequest &req, ApiResponse &rs
     {
         return changeSensorState(req, rsp);
     }
-    // GET, PUT, DELETE /api/<apikey>/sensors/<id>/state/pin
-    else if ((req.path.size() == 6) && (req.hdr.method() == "PUT" || req.hdr.method() == "GET" || req.hdr.method() == "DELETE") && (req.path[4] == "state") && (req.path[5] == "pin"))
+    // GET, DELETE /api/<apikey>/sensors/<id>/state/pin/<userid>
+    else if ((req.path.size() == 7) && (req.hdr.method() == "PUT" || req.hdr.method() == "DELETE") && (req.path[4] == "state") && (req.path[5] == "pin"))
+    {
+        return changeDoorLockPin(req, rsp);
+    }
+    // PUT /api/<apikey>/sensors/<id>/state/pin
+    else if ((req.path.size() == 6) && (req.hdr.method() == "PUT") && (req.path[4] == "state") && (req.path[5] == "pin"))
     {
         return changeDoorLockPin(req, rsp);
     }
@@ -2616,15 +2621,26 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
     
     // Check value
     quint16 userID = 0;
-    if (map.contains("id") && map["id"].type() == QVariant::Double)
-    {
-        userID = map["id"].toUInt(&ok);
-        if (!ok)
+    if (req.hdr.method() == "PUT") {
+        if (map.contains("id") && map["id"].type() == QVariant::Double)
         {
-            rsp.httpStatus = HttpStatusNotFound;
-            rsp.list.append(errorToMap(ERR_INVALID_JSON, QString("/sensors/%1/state/pin").arg(id), QString("resource, /sensors/%1/state/pin, wrong User ID").arg(id)));
-            return REQ_READY_SEND;
+            userID = map["id"].toUInt(&ok);
         }
+    }
+    else
+    {
+        ok = false;
+        if (req.path.size() >= 7)
+        {
+            userID = req.path[6].toUInt(&ok);
+        }
+        
+    }
+    if (!ok)
+    {
+        rsp.httpStatus = HttpStatusNotFound;
+        rsp.list.append(errorToMap(ERR_INVALID_JSON, QString("/sensors/%1/state/pin").arg(id), QString("resource, /sensors/%1/state/pin, wrong User ID").arg(id)));
+        return REQ_READY_SEND;
     }
     
     // Create task
