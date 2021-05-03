@@ -2605,12 +2605,16 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
     }
     
     // Check value
-    quint16 userID = req.path[6].toUInt(&ok);
-    if (!ok)
+    quint16 userID = 0;
+    if (map.contains("id") && map["id"].type() == QVariant::Double)
     {
-        rsp.httpStatus = HttpStatusNotFound;
-        rsp.list.append(errorToMap(ERR_INVALID_JSON, QString("/sensors/%1/state/pin").arg(id), QString("resource, /sensors/%1/state/pin, wrong User ID").arg(id)));
-        return REQ_READY_SEND;
+        userID = map["id"].toUInt(&ok);
+        if (!ok)
+        {
+            rsp.httpStatus = HttpStatusNotFound;
+            rsp.list.append(errorToMap(ERR_INVALID_JSON, QString("/sensors/%1/state/pin").arg(id), QString("resource, /sensors/%1/state/pin, wrong User ID").arg(id)));
+            return REQ_READY_SEND;
+        }
     }
     
     // Create task
@@ -2637,7 +2641,7 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
         QVariant var = Json::parse(req.content, ok);
         map = var.toMap();
     
-        if (map.contains("status") && map.contains("type") && map.contains("code"))
+        if (map.contains("id") && map.contains("status") && map.contains("type") && map.contains("code"))
         {
             if (!addTaskDoorLockPin(task, COMMAND_SET_PIN, userID, map))
             {

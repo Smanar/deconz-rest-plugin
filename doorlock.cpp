@@ -242,19 +242,18 @@ bool DeRestPluginPrivate::addTaskDoorLockPin(TaskItem &task, quint8 command, qui
         QDataStream stream(&task.zclFrame.payload(), QIODevice::WriteOnly);
         stream.setByteOrder(QDataStream::LittleEndian);
         
-        stream << userID;
-        
         if (command == COMMAND_SET_PIN)
         {
             bool ok2;
             quint8 status;
             quint8 type;
-            
+
             status = static_cast<qint8>(map["status"].toUInt(&ok2));
             if (!ok2) { return false; }
             type = static_cast<qint8>(map["type"].toUInt(&ok2));
             if (!ok2) { return false; }
-
+            
+            stream << userID;
             stream << status;
             stream << type;
 
@@ -266,6 +265,10 @@ bool DeRestPluginPrivate::addTaskDoorLockPin(TaskItem &task, quint8 command, qui
             {
                 stream << (quint8) id[i];
             }
+        }
+        else
+        {
+            stream << userID;
         }
     }
 
