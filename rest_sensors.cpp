@@ -90,7 +90,7 @@ int DeRestPluginPrivate::handleSensorsApi(const ApiRequest &req, ApiResponse &rs
         return changeSensorState(req, rsp);
     }
     // GET, DELETE /api/<apikey>/sensors/<id>/state/pin/<userid>
-    else if ((req.path.size() == 7) && (req.hdr.method() == "PUT" || req.hdr.method() == "DELETE") && (req.path[4] == "state") && (req.path[5] == "pin"))
+    else if ((req.path.size() == 7) && (req.hdr.method() == "GET" || req.hdr.method() == "DELETE") && (req.path[4] == "state") && (req.path[5] == "pin"))
     {
         return changeDoorLockPin(req, rsp);
     }
@@ -2666,7 +2666,7 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
         {
             if (addTaskDoorLockPin(task, COMMAND_SET_PIN, userID, map))
             {
-                rspItem["success"] = QString("/sensors/%1/state/pin put user %1").arg(id).arg(userID);
+                rspItem["success"] = QString("/sensors/%1/state/pin put user %2").arg(id).arg(userID);
                 rsp.list.append(rspItem);
                 correct = true;
             }
@@ -2676,7 +2676,7 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
     {        
         if (addTaskDoorLockPin(task, COMMAND_CLEAR_PIN, userID, map))
         {
-            rspItem["success"] = QString("/sensors/%1/state/pin d user %1").arg(id).arg(userID);
+            rspItem["success"] = QString("/sensors/%1/state/pin delete user %2").arg(id).arg(userID);
             rsp.list.append(rspItem);
             correct = true;
         }
