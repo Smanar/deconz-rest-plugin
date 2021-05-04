@@ -235,8 +235,8 @@ bool DeRestPluginPrivate::addTaskDoorLockPin(TaskItem &task, quint8 command, qui
     task.zclFrame.setSequenceNumber(zclSeq++);
     task.zclFrame.setCommandId(command); // Get Pin
     task.zclFrame.setFrameControl(deCONZ::ZclFCClusterCommand |
-                                  deCONZ::ZclFCDirectionClientToServer |
-                                  deCONZ::ZclFCDisableDefaultResponse);
+                                  deCONZ::ZclFCDirectionClientToServer /* |
+                                  deCONZ::ZclFCDisableDefaultResponse*/);
 
     { // payload
         QDataStream stream(&task.zclFrame.payload(), QIODevice::WriteOnly);
