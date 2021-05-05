@@ -18,6 +18,20 @@ const QStringList EventCodeList({
     "KeyUnlock","AutoLock","ScheduleLock","ScheduleUnlock","Manual Lock","Manual Unlock","Non-Access User Operational Event"
     });
 
+// User Status
+//------------
+// 0x01 Occupied / Enabled (Access Given)
+// 0x03 Occupied / Disabled
+// 0xFF Not Supported
+
+// User Type
+//----------
+// 0x00 Unrestricted User (default)
+// 0x01 Year Day Schedule User
+// 0x02 Week Day Schedule User
+// 0x03 Master User
+// 0x04 Non Access User
+// 0xFF Not Supported
 
 void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame)
 {
@@ -40,169 +54,197 @@ void DeRestPluginPrivate::handleDoorLockClusterIndication(const deCONZ::ApsDataI
     
     bool stateUpdated;
 
-    if (zclFrame.isClusterCommand() &&
-       (zclFrame.frameControl() & deCONZ::ZclFCDirectionServerToClient))
+    if (zclFrame.isClusterCommand())
     {
-        if (zclFrame.commandId() == COMMAND_READ_PIN)
+        if (zclFrame.frameControl() & deCONZ::ZclFCDirectionServerToClient)
         {
+            
             QDataStream stream(zclFrame.payload());
             stream.setByteOrder(QDataStream::LittleEndian);
             
-            // sample payload : 0300 01 00 04 31323334
-            
-            quint16 length = zclFrame.payload().size() - 4;
-            
-            quint16 userID;
-            quint8 status;
-            quint8 type;
-            QString code;
-            quint8 codeTemp;
-            
-            stream >> userID;
-            stream >> status;
-            stream >> type;
-
-            if (length > 1)
+            if (zclFrame.commandId() == COMMAND_SET_PIN)
             {
+                quint8 status;
+                stream >> status;
                 
-                // skip Code lenght, use payload lenght instead
-                stream >> codeTemp;
-                length -= 1;
+                // 0x00 = Success
+                // 0x01 = General failure
+                // 0x02 = Memory full
+                // 0x03 = Duplicate Code error
                 
-                for (; length > 0; length--)
+                DBG_Printf(DBG_INFO, "[Door lock] - Set PIN command received, Status: %d\n", status);
+                
+            }
+            else if (zclFrame.commandId() == COMMAND_CLEAR_PIN)
+            {
+                quint8 status;
+                stream >> status;
+                
+                DBG_Printf(DBG_INFO, "[Door lock] - Clear PIN command received, Status: %d\n", status);
+                
+            }
+            else if (zclFrame.commandId() == COMMAND_READ_PIN)
+            {
+                // sample payload : 0300 01 00 04 31323334
+                
+                quint16 length = zclFrame.payload().size() - 4;
+                
+                quint16 userID;
+                quint8 status;
+                quint8 type;
+                QString code;
+                quint8 codeTemp;
+                
+                stream >> userID;
+                stream >> status;
+                stream >> type;
+
+                if (length > 1)
                 {
-                    stream >> codeTemp;
-                    code.append(QChar(codeTemp));
-                }
-            }
-            
-            DBG_Printf(DBG_INFO, "[Door lock] - Read PIN command received, User ID: %d, code: %s, Status: %d, Type %d\n", userID , qPrintable(code) ,status, type);
-
-            QString data;
-            
-            ResourceItem *item = sensorNode->item(RStatePin);
-
-            if (item && !item->toString().isEmpty())
-            {
-                data = item->toString();
-            }
-            else
-            {
-                data = QLatin1String("[]");
-            }
-            
-            data = data.replace(QLatin1String("\\\""), QLatin1String("\""));
-            
-            DBG_Printf(DBG_INFO, "Door lock debug : data %s\n", qPrintable(data));
-
-            if (true)
-            {
-                //Transform qstring to json
-                QVariant var = Json::parse(data);
-                QVariantList list = var.toList();
-                QVariantList list2;
-                
-                bool exist = false;
-                quint16 id;
-                
-                foreach (const QVariant & v, list)
-                {
-                    QVariantMap map = v.toMap();
                     
-                    if (map["id"].type() == QVariant::Double)
+                    // skip Code lenght, use payload lenght instead
+                    stream >> codeTemp;
+                    length -= 1;
+                    
+                    for (; length > 0; length--)
                     {
-                        id = map["id"].toInt();
-                        
-                        //If exist, update
-                        if (id == userID)
-                        {
-                            map["status"] = status;
-                            map["type"] = type;
-                            map["code"] = code;
-                            
-                            exist = true;
-                        }
+                        stream >> codeTemp;
+                        code.append(QChar(codeTemp));
                     }
-                    list2.append(map);
                 }
                 
-                //If not exist, add it
-                if (!exist)
+                DBG_Printf(DBG_INFO, "[Door lock] - Read PIN command received, User ID: %d, code: %s, Status: %d, Type %d\n", userID , qPrintable(code) ,status, type);
+
+                QString data;
+                
+                ResourceItem *item = sensorNode->item(RStatePin);
+
+                if (item && !item->toString().isEmpty())
                 {
-                    QVariantMap map2;
-                    map2.insert("id", userID);
-                    map2.insert("status",status);
-                    map2.insert("type", type);
-                    map2.insert("code", code);
-                    list2.append(map2);
+                    data = item->toString();
                 }
-     
-                //Transform Json array to qstring
-                data = Json::serialize(list2);
-            }
+                else
+                {
+                    data = QLatin1String("[]");
+                }
+                
+                data = data.replace(QLatin1String("\\\""), QLatin1String("\""));
+                
+                DBG_Printf(DBG_INFO, "Door lock debug : data %s\n", qPrintable(data));
 
-            if (item)
-            {
-                item->setValue(data);
-                Event e(RSensors, RStatePin, sensorNode->id(), item);
-                enqueueEvent(e);
-                stateUpdated = true;
+                if (true)
+                {
+                    //Transform qstring to json
+                    QVariant var = Json::parse(data);
+                    QVariantList list = var.toList();
+                    QVariantList list2;
+                    
+                    bool exist = false;
+                    quint16 id;
+                    
+                    foreach (const QVariant & v, list)
+                    {
+                        QVariantMap map = v.toMap();
+                        
+                        if (map["id"].type() == QVariant::Double)
+                        {
+                            id = map["id"].toInt();
+                            
+                            //If exist, update
+                            if (id == userID)
+                            {
+                                map["status"] = status;
+                                map["type"] = type;
+                                map["code"] = code;
+                                
+                                exist = true;
+                            }
+                        }
+                        list2.append(map);
+                    }
+                    
+                    //If not exist, add it
+                    if (!exist)
+                    {
+                        QVariantMap map2;
+                        map2.insert("id", userID);
+                        map2.insert("status",status);
+                        map2.insert("type", type);
+                        map2.insert("code", code);
+                        list2.append(map2);
+                    }
+         
+                    //Transform Json array to qstring
+                    data = Json::serialize(list2);
+                }
+
+                if (item)
+                {
+                    item->setValue(data);
+                    Event e(RSensors, RStatePin, sensorNode->id(), item);
+                    enqueueEvent(e);
+                    stateUpdated = true;
+                }
+                
             }
-            
+            else if (zclFrame.commandId() == OPERATION_EVENT_NOTIFICATON)
+            {
+                
+                QDataStream stream(zclFrame.payload());
+                stream.setByteOrder(QDataStream::LittleEndian);
+
+                quint8 source;
+                quint8 code;
+                quint16 userID;
+                quint8 pin;
+                quint8 localtime;
+                
+                stream >> source;
+                stream >> code;
+                stream >> userID;
+                stream >> pin;
+                stream >> localtime;
+                
+                DBG_Printf(DBG_INFO, "Door lock notifications > source: 0x%02X, code: 0x%02X, pin: 0x%04X local time:0x%02X", source, code, pin, localtime);
+                
+                //Source name
+                QString sourcename;
+                if (source > EventSourceList.size()) {
+                    sourcename =  QString("unknow");
+                }
+                else
+                {
+                    sourcename =  EventSourceList[source];
+                }
+
+                //code name
+                QString codename;
+                if (code > EventCodeList.size()) {
+                    codename =  QString("unknow");
+                }
+                else
+                {
+                    codename =  EventCodeList[code];
+                }
+                
+                ResourceItem *item = sensorNode->item(RStateNotification);
+
+                if (item)
+                {
+                    char s[5];
+                    sprintf(s, "%04d", pin);
+                    QString action = QString("source:%1,code:%2,pin:%3").arg(sourcename).arg(codename).arg(s);
+                    item->setValue(action);
+                    Event e(RSensors, RStateNotification, sensorNode->id(), item);
+                    enqueueEvent(e);
+                    stateUpdated = true;
+                }
+
+            }
         }
-        else if (zclFrame.commandId() == OPERATION_EVENT_NOTIFICATON)
+        else
         {
-            
-            QDataStream stream(zclFrame.payload());
-            stream.setByteOrder(QDataStream::LittleEndian);
-
-            quint8 source;
-            quint8 code;
-            quint16 userID;
-            quint8 pin;
-            quint8 localtime;
-            
-            stream >> source;
-            stream >> code;
-            stream >> userID;
-            stream >> pin;
-            stream >> localtime;
-            
-            DBG_Printf(DBG_INFO, "Door lock notifications > source: 0x%02X, code: 0x%02X, pin: 0x%04X local time:0x%02X", source, code, pin, localtime);
-            
-            //Source name
-            QString sourcename;
-            if (source > EventSourceList.size()) {
-                sourcename =  QString("unknow");
-            }
-            else
-            {
-                sourcename =  EventSourceList[source];
-            }
-
-            //code name
-            QString codename;
-            if (code > EventCodeList.size()) {
-                codename =  QString("unknow");
-            }
-            else
-            {
-                codename =  EventCodeList[code];
-            }
-            
-            ResourceItem *item = sensorNode->item(RStateNotification);
-
-            if (item)
-            {
-                char s[5];
-                sprintf(s, "%04d", pin);
-                QString action = QString("source:%1,code:%2,pin:%3").arg(sourcename).arg(codename).arg(s);
-                item->setValue(action);
-                Event e(RSensors, RStateNotification, sensorNode->id(), item);
-                enqueueEvent(e);
-                stateUpdated = true;
-            }
-
+            DBG_Printf(DBG_INFO, "Door lock debug 9\n");
         }
     }
     
@@ -235,8 +277,8 @@ bool DeRestPluginPrivate::addTaskDoorLockPin(TaskItem &task, quint8 command, qui
     task.zclFrame.setSequenceNumber(zclSeq++);
     task.zclFrame.setCommandId(command); // Get Pin
     task.zclFrame.setFrameControl(deCONZ::ZclFCClusterCommand |
-                                  deCONZ::ZclFCDirectionClientToServer /* |
-                                  deCONZ::ZclFCDisableDefaultResponse*/);
+                                  deCONZ::ZclFCDirectionClientToServer |
+                                  deCONZ::ZclFCDisableDefaultResponse);
 
     { // payload
         QDataStream stream(&task.zclFrame.payload(), QIODevice::WriteOnly);
