@@ -2652,9 +2652,9 @@ int DeRestPluginPrivate::changeDoorLockPin(const ApiRequest &req, ApiResponse &r
     task.req.setDstAddressMode(deCONZ::ApsExtAddress);
     
     // To test
-    task.req.setTxOptions(0);
-    task.req.setDstAddressMode(deCONZ::ApsNwkAddress);
-    task.req.dstAddress().setNwk(sensor->address().nwk());
+    //task.req.setTxOptions(0);
+    //task.req.setDstAddressMode(deCONZ::ApsNwkAddress);
+    //task.req.dstAddress().setNwk(sensor->address().nwk());
 
     if (req.hdr.method() == "GET")
     {        
