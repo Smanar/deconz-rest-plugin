@@ -1485,6 +1485,16 @@ by the Poll Control Cluster Client.</description>
     <cluster id="0x0101" name="Door Lock">
       <description>The door lock cluster provides an interface to a generic way to secure a door.</description>
       <client>
+        <command id="0x06" dir="recv" name="Get PIN Code Response" required="m">
+            <description>The Response to the get PIN request.</description>
+            <payload>
+                <attribute id="0x0000" type="enum8" name="Status" required="m" default="0x00" enumeration="ZCL_Status"></attribute>
+                <attribute id="0x0001" type="u16" name="User ID" showas="hex" required="m" default="0x0000"></attribute>
+                <attribute id="0x0002" type="u8" name="Status" showas="hex" required="m" default="0x00"></attribute>
+                <attribute id="0x0003" type="enum8" name="User Type" required="m" default="0"></attribute>
+                <attribute id="0x0004" type="cstring" name="Code" required="m"></attribute>
+            </payload>
+        </command>
       </client>
       <server>
         <attribute-set id="0x0000" description="Basic Information Attribute Set">
