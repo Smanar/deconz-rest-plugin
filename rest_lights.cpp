@@ -538,7 +538,11 @@ int DeRestPluginPrivate::setLightState(const ApiRequest &req, ApiResponse &rsp)
         else if (taskRef.lightNode->item(RStateColorMode))
         {
         }
-        //switch and siren
+        // Not a light, having tuya cluster, but use classic cluster
+        if (R_GetProductId(taskRef.lightNode) == QLatin1String("Tuya_OTH PSBZS A1"))
+        {
+        }
+        //switch and siren, have tuya cluster and use it
         else
         {
             return setTuyaDeviceState(req, rsp, taskRef, map);
