@@ -1999,6 +1999,11 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
                 hasAlert = true;	
             }	
         }
+        
+        //Not used, but to avoid error on third app, like phoscon
+        else if (p.key() == "transitiontime")
+        {
+        }
 
         else
         {
