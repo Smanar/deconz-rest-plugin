@@ -152,37 +152,22 @@ void DeRestPluginPrivate::handleTuyaClusterIndication(const deCONZ::ApsDataIndic
         stream >> status;
         stream >> transid;
         
+        DBG_Printf(DBG_INFO, "Tuya debug 4 : Address: 0x%016llX Command: %u Payload: %s\n", ind.srcAddress().ext(), zclFrame.commandId(), qPrintable(zclFrame.payload().toHex()));
+        
         // The next part can be present many time
         while (!stream.atEnd())
         {
             stream >> dp;
             stream >> fn;
-
-            //Convertion octet string to decimal value
-            stream >> length;
-
-            //security, it seem 4 is the maximum
-            if (length > 4)
-            {
-                DBG_Printf(DBG_INFO, "Tuya : Schedule command\n");
-            }
-            else
-            {
-                for (; length > 0; length--)
-                {
-                    stream >> dummy;
-                    data = data << 8;
-                    data = data + dummy;
-                }
-            }
-
+            
             //To be more precise
             dp_identifier = (dp & 0xFF);
             dp_type = ((dp >> 8) & 0xFF);
 
-            DBG_Printf(DBG_INFO, "Tuya debug 4 : Address 0x%016llX Payload %s\n", ind.srcAddress().ext(), qPrintable(zclFrame.payload().toHex()));
-            DBG_Printf(DBG_INFO, "Tuya debug 5 : Status: %u Transid: %u Dp: %u (0x%02X,0x%02X) Fn: %u Data %ld\n", status, transid, dp, dp_type, dp_identifier, fn, data);
+            //Convertion octet string to decimal value
+            stream >> length;
 
+            //special Requests
             if (length > 4) //schedule command
             {
 
@@ -195,6 +180,8 @@ void DeRestPluginPrivate::handleTuyaClusterIndication(const deCONZ::ApsDataIndic
                 // Saturday = W002
                 // Sunday = W001
                 // All days = W127
+                
+                DBG_Printf(DBG_INFO, "Tuya debug 5 : Schedule command > Status: %u Transid: %u Dp: %u (0x%02X,0x%02X) Fn: %u\n", status, transid, dp, dp_type, dp_identifier, fn);
 
                 QString transitions;
 
@@ -304,6 +291,16 @@ void DeRestPluginPrivate::handleTuyaClusterIndication(const deCONZ::ApsDataIndic
 
                 return;
             }
+            
+            // Classic requests
+            for (; length > 0; length--)
+            {
+                stream >> dummy;
+                data = data << 8;
+                data = data + dummy;
+            }
+
+            DBG_Printf(DBG_INFO, "Tuya debug 5 : Status: %u Transid: %u Dp: %u (0x%02X,0x%02X) Fn: %u Data %ld\n", status, transid, dp, dp_type, dp_identifier, fn, data);
 
             // Sensor and light use same cluster, so need to make a choice for device that have both
             // Some device have sensornode AND lightnode, so need to use the good one.
