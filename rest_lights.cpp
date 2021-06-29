@@ -2004,6 +2004,10 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
             {
                 onTime = map["ontime"].toUShort(&ok);
             }
+            if ((onTime == 0) || !ok)
+            {
+                rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/lights/%1").arg(id), QString("invalid value, %1, for parameter, ontime").arg(map["ontime"].toString())));
+            }
         }
         
         //Not used, but to avoid error on third app, like phoscon
