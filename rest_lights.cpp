@@ -1953,6 +1953,7 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
     bool hasBri = false;
     bool hasAlert = false;
     uint targetBri = 0;
+    quint16 onTime = 0;
 
     bool ok = false;
 
@@ -1994,6 +1995,14 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
             if (map[p.key()].type() == QVariant::String)
             {
                 hasAlert = true;
+            }
+        }
+        
+        else if (p.key() == "ontime")
+        {
+            if (map[p.key()].type() == QVariant::Double)
+            {
+                onTime = map["ontime"].toUShort(&ok);
             }
         }
         
@@ -2070,7 +2079,19 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
             data = QByteArray("\x00", 1);
         }
 
+        //Timed command
+        if (onTime > 0)
+        {
+            QByteArray data2;
+            data2.append((qint8)((onTime >> 24) & 0xff));
+            data2.append((qint8)((onTime >> 16) & 0xff));
+            data2.append((qint8)((onTime >> 8) & 0xff));
+            data2.append((qint8)(onTime & 0xff));
+            sendTuyaRequest(taskRef, TaskTuyaRequest, DP_TYPE_VALUE, DP_IDENTIFIER_ONTIME, data2);
+        }
+
         ok = sendTuyaRequest(taskRef, TaskTuyaRequest, DP_TYPE_BOOL, button, data);
+
 
         if (ok)
         {
