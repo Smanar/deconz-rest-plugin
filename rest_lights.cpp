@@ -1953,7 +1953,7 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
     bool hasBri = false;
     bool hasAlert = false;
     uint targetBri = 0;
-    double onTime = 0;
+    uint onTime = 0;
 
     bool ok = false;
 
@@ -2002,7 +2002,7 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
         {
             if (map[p.key()].type() == QVariant::Double)
             {
-                onTime = map["ontime"].toDouble(&ok);
+                onTime = map["ontime"].toUInt(&ok);
             }
             if ((onTime == 0) || !ok)
             {
