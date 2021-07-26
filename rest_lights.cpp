@@ -2091,7 +2091,8 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
             data2.append((qint8)((onTime >> 16) & 0xff));
             data2.append((qint8)((onTime >> 8) & 0xff));
             data2.append((qint8)(onTime & 0xff));
-            sendTuyaRequest(taskRef, TaskTuyaRequest, DP_TYPE_VALUE, DP_IDENTIFIER_ONTIME, data2);
+            //sendTuyaRequest(taskRef, TaskTuyaRequest, DP_TYPE_VALUE, DP_IDENTIFIER_ONTIME, data2);
+            sendTuyaRequest(taskRef, TaskTuyaRequest, DP_TYPE_RAW, DP_IDENTIFIER_ONTIME, data2);
         }
 
         ok = sendTuyaRequest(taskRef, TaskTuyaRequest, DP_TYPE_BOOL, button, data);
