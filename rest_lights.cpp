@@ -2112,14 +2112,14 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
             {
                 if (targetOn)
                 {
-                    lightNode->setValue(RStateOn, true);
+                    taskRef.lightNode->setValue(RStateOn, true);
                 }
                 else
                 {
-                    lightNode->setValue(RStateOn, true);
+                    taskRef.lightNode->setValue(RStateOn, true);
                 }
-                updateLightEtag(&*lightNode);
-                lightNode->setNeedSaveDatabase(true);
+                updateLightEtag(&*taskRef.lightNode);
+                taskRef.lightNode->setNeedSaveDatabase(true);
                 saveDatabaseItems |= DB_LIGHTS;
             }
             
