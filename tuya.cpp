@@ -1359,6 +1359,72 @@ bool DeRestPluginPrivate::sendTuyaRequest(TaskItem &taskRef, TaskType taskType, 
     return true;
 }
 
+bool DeRestPluginPrivate::sendDoubleTuyaRequest(TaskItem &taskRef, TaskType taskType, qint8 Dp_type1, qint8 Dp_identifier1, const QByteArray &data1, qint8 Dp_type2, qint8 Dp_identifier2, const QByteArray &data2)
+{
+    DBG_Printf(DBG_INFO, "Send Tuya request: Dp_type: 0x%02X, Dp_identifier 0x%02X, data: %s\n", Dp_type, Dp_identifier, qPrintable(data.toHex()));
+    
+    const quint8 seq = zclSeq++;
+
+    TaskItem task;
+    copyTaskReq(taskRef, task);
+
+    //Tuya task
+    task.taskType = taskType;
+
+    task.req.setClusterId(TUYA_CLUSTER_ID);
+    task.req.setProfileId(HA_PROFILE_ID);
+
+    task.zclFrame.payload().clear();
+    task.zclFrame.setSequenceNumber(seq);
+    task.zclFrame.setCommandId(0x00); // Command 0x00
+    task.zclFrame.setFrameControl(deCONZ::ZclFCClusterCommand | deCONZ::ZclFCDirectionClientToServer | deCONZ::ZclFCDisableDefaultResponse);
+
+    // payload
+    QDataStream stream(&task.zclFrame.payload(), QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
+
+    stream << static_cast<qint8>(0x00);          // Status always 0x00
+    stream << static_cast<qint8>(seq);           // TransID, use seq
+    
+    // First command 
+    stream << static_cast<qint8>(Dp_identifier1); // Dp_indentifier
+    stream << static_cast<qint8>(Dp_type1);       // Dp_type
+    stream << static_cast<qint8>(0x00);          // Fn, always 0
+    // Data
+    stream << static_cast<qint8>(data1.length()); // length (can be 0 for Dp_identifier = enums)
+    for (int i = 0; i < data1.length(); i++)
+    {
+        stream << static_cast<quint8>(data1[i]);
+    }
+    
+    // Second command
+    stream << static_cast<qint8>(Dp_identifier2); // Dp_indentifier
+    stream << static_cast<qint8>(Dp_type2);       // Dp_type
+    stream << static_cast<qint8>(0x00);          // Fn, always 0
+    // Data
+    stream << static_cast<qint8>(data2.length()); // length (can be 0 for Dp_identifier = enums)
+    for (int i = 0; i < data2.length(); i++)
+    {
+        stream << static_cast<quint8>(data2[i]);
+    }
+
+    { // ZCL frame
+        task.req.asdu().clear(); // cleanup old request data if there is any
+        QDataStream stream(&task.req.asdu(), QIODevice::WriteOnly);
+        stream.setByteOrder(QDataStream::LittleEndian);
+        task.zclFrame.writeToStream(stream);
+    }
+
+    if (!addTask(task))
+    {
+        return false;
+    }
+
+    processTasks();
+
+    return true;
+}
+
 bool DeRestPluginPrivate::sendTuyaCommand(const deCONZ::ApsDataIndication &ind, qint8 commandId, const QByteArray &data)
 {
     DBG_Printf(DBG_INFO, "Send Tuya command 0x%02X, data: %s\n", commandId, qPrintable(data.toHex()));

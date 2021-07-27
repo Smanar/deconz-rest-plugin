@@ -2091,11 +2091,12 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
             data2.append((qint8)((onTime >> 16) & 0xff));
             data2.append((qint8)((onTime >> 8) & 0xff));
             data2.append((qint8)(onTime & 0xff));
-            //sendTuyaRequest(taskRef, TaskTuyaRequest, DP_TYPE_VALUE, DP_IDENTIFIER_ONTIME, data2);
-            sendTuyaRequest(taskRef, TaskTuyaRequest, DP_TYPE_RAW, DP_IDENTIFIER_ONTIME, data2);
+            sendTuyaRequest(taskRef, TaskTuyaRequest, DP_TYPE_VALUE, DP_IDENTIFIER_ONTIME, data2, DP_TYPE_BOOL, button, data);
         }
-
-        ok = sendTuyaRequest(taskRef, TaskTuyaRequest, DP_TYPE_BOOL, button, data);
+        else
+        {
+            ok = sendTuyaRequest(taskRef, TaskTuyaRequest, DP_TYPE_BOOL, button, data);
+        }
 
 
         if (ok)
@@ -2105,6 +2106,23 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
             rspItemState[QString("/lights/%1/state/on").arg(id)] = targetOn;
             rspItem["success"] = rspItemState;
             rsp.list.append(rspItem);
+            
+            //This device don't have reporting (yet)
+            if (R_GetProductId(taskRef.lightNode) == QLatin1String("Tuya_OTH PSBZS A1"))
+            {
+                if (targetOn)
+                {
+                    lightNode->setValue(RStateOn, true);
+                }
+                else
+                {
+                    lightNode->setValue(RStateOn, true);
+                }
+                updateLightEtag(&*lightNode);
+                lightNode->setNeedSaveDatabase(true);
+                saveDatabaseItems |= DB_LIGHTS;
+            }
+            
         }
         else
         {
