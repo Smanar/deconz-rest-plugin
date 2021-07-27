@@ -1361,7 +1361,7 @@ bool DeRestPluginPrivate::sendTuyaRequest(TaskItem &taskRef, TaskType taskType, 
 
 bool DeRestPluginPrivate::sendDoubleTuyaRequest(TaskItem &taskRef, TaskType taskType, qint8 Dp_type1, qint8 Dp_identifier1, const QByteArray &data1, qint8 Dp_type2, qint8 Dp_identifier2, const QByteArray &data2)
 {
-    DBG_Printf(DBG_INFO, "Send Tuya request: Dp_type: 0x%02X, Dp_identifier 0x%02X, data: %s\n", Dp_type, Dp_identifier, qPrintable(data.toHex()));
+    DBG_Printf(DBG_INFO, "Send Tuya request: Dp_type: 0x%02X, Dp_identifier 0x%02X, data: %s, Dp_type: 0x%02X, Dp_identifier 0x%02X, data: %s\n", Dp_type1, Dp_identifier1, qPrintable(data1.toHex()), Dp_type2, Dp_identifier2, qPrintable(data2.toHex()));
     
     const quint8 seq = zclSeq++;
 
