@@ -2098,7 +2098,6 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
             ok = sendTuyaRequest(taskRef, TaskTuyaRequest, DP_TYPE_BOOL, button, data);
         }
 
-
         if (ok)
         {
             QVariantMap rspItem;
@@ -2107,7 +2106,7 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
             rspItem["success"] = rspItemState;
             rsp.list.append(rspItem);
             
-            //This device don't have reporting (yet)
+            //This device don't have reporting (yet) so force an update on the API
             if (R_GetProductId(taskRef.lightNode) == QLatin1String("Tuya_OTH PSBZS A1"))
             {
                 if (targetOn)
