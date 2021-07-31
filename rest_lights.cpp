@@ -2116,7 +2116,7 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
                 }
                 else
                 {
-                    taskRef.lightNode->setValue(RStateOn, true);
+                    taskRef.lightNode->setValue(RStateOn, false);
                 }
                 updateLightEtag(&*taskRef.lightNode);
                 taskRef.lightNode->setNeedSaveDatabase(true);
