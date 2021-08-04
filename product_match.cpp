@@ -45,6 +45,7 @@ static const ProductMap products[] =
     // Tuya_COVD : covering device using Tuya cluster
     // Tuya_RPT : Repeater
     // Tuya_SEN : Sensor
+    // Tuya_OTH : other
 
     // Tuya Thermostat / TRV
     {"_TYST11_zuhszj9s", "uhszj9s", "HiHome", "Tuya_THD WZB-TRVL TRV"},
@@ -95,6 +96,7 @@ static const ProductMap products[] =
     // Sensor
     {"_TZ3210_rxqls8v0", "TS0202", "Fantem", "Tuya_SEN Multi-sensor"},
     {"_TZ3210_zmy9hjay", "TS0202", "Fantem", "Tuya_SEN Multi-sensor"},
+    {"_TZE200_htnnfasr", "TS0601", "PARKSIDE", "Tuya_OTH PSBZS A1"},
 
      // Switch
     {"_TZE200_la2c2uo9", "TS0601", "Moes", "Tuya_DIMSWITCH MS-105Z"},

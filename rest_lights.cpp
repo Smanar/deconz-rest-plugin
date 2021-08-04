@@ -538,7 +538,7 @@ int DeRestPluginPrivate::setLightState(const ApiRequest &req, ApiResponse &rsp)
         else if (taskRef.lightNode->item(RStateColorMode))
         {
         }
-        //switch and siren
+        //switch and siren, have tuya cluster and use it
         else
         {
             return setTuyaDeviceState(req, rsp, taskRef, map);
@@ -1956,6 +1956,7 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
     bool hasBri = false;
     bool hasAlert = false;
     uint targetBri = 0;
+    uint onTime = 0;
 
     bool ok = false;
 
@@ -2000,7 +2001,19 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
             }
         }
         
-        //Not used but can cause error
+        else if (p.key() == "ontime")
+        {
+            if (map[p.key()].type() == QVariant::Double)
+            {
+                onTime = map["ontime"].toUInt(&ok);
+            }
+            if ((onTime == 0) || !ok)
+            {
+                rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/lights/%1").arg(id), QString("invalid value, %1, for parameter, ontime").arg(map["ontime"].toString())));
+            }
+        }
+        
+        //Not used, but to avoid error on third app, like phoscon
         else if (p.key() == "transitiontime")
         {
         }
@@ -2063,7 +2076,7 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
         //Use only the first endpoint for command
         taskRef.req.setDstEndpoint(0x01);
 
-        DBG_Printf(DBG_INFO, "Tuya debug 10: EP: %d ID : %s\n", ep, qPrintable(id));
+        DBG_Printf(DBG_INFO, "Tuya switch request: EP: %d ID : %s\n", ep, qPrintable(id));
 
         if (targetOn)
         {
@@ -2074,7 +2087,20 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
             data = QByteArray("\x00", 1);
         }
 
-        ok = sendTuyaRequest(taskRef, TaskTuyaRequest, DP_TYPE_BOOL, button, data);
+        //Timed command
+        if (onTime > 0)
+        {
+            QByteArray data2;
+            data2.append((qint8)((onTime >> 24) & 0xff));
+            data2.append((qint8)((onTime >> 16) & 0xff));
+            data2.append((qint8)((onTime >> 8) & 0xff));
+            data2.append((qint8)(onTime & 0xff));
+            ok = sendDoubleTuyaRequest(taskRef, TaskTuyaRequest, DP_TYPE_VALUE, DP_IDENTIFIER_ONTIME, data2, DP_TYPE_BOOL, button, data);
+        }
+        else
+        {
+            ok = sendTuyaRequest(taskRef, TaskTuyaRequest, DP_TYPE_BOOL, button, data);
+        }
 
         if (ok)
         {
@@ -2083,6 +2109,23 @@ int DeRestPluginPrivate::setTuyaDeviceState(const ApiRequest &req, ApiResponse &
             rspItemState[QString("/lights/%1/state/on").arg(id)] = targetOn;
             rspItem["success"] = rspItemState;
             rsp.list.append(rspItem);
+            
+            //This device don't have reporting (yet) so force an update on the API
+            if (R_GetProductId(taskRef.lightNode) == QLatin1String("Tuya_OTH PSBZS A1"))
+            {
+                if (targetOn)
+                {
+                    taskRef.lightNode->setValue(RStateOn, true);
+                }
+                else
+                {
+                    taskRef.lightNode->setValue(RStateOn, false);
+                }
+                updateLightEtag(&*taskRef.lightNode);
+                taskRef.lightNode->setNeedSaveDatabase(true);
+                saveDatabaseItems |= DB_LIGHTS;
+            }
+            
         }
         else
         {
