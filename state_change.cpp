@@ -338,7 +338,7 @@ int SC_WindowCovering(const Resource *r, const StateChange *stateChange, deCONZ:
     if (cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_VALUE || cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_PCT ||
         cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_VALUE || cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_PCT)
     {
-        QDataStream stream(&task.zclFrame.payload(), QIODevice::WriteOnly);
+        QDataStream stream(&zclFrame.payload(), QIODevice::WriteOnly);
         stream.setByteOrder(QDataStream::LittleEndian);
 
         if (cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_VALUE || cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_VALUE)
