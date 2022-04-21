@@ -1,0 +1,9 @@
+{
+	"schema": "resourceitem1.schema.json",
+	"id": "config/reversemode",
+	"datatype": "UInt8",
+	"access": "RW",
+	"public": true,
+    "default": 0,
+	"description": "Special mode used by covering if they need to reverse a direction."
+}

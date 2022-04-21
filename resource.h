@@ -221,6 +221,7 @@ extern const char *RConfigHeatSetpoint;
 extern const char *RConfigHostFlags;
 extern const char *RConfigId;
 extern const char *RConfigInterfaceMode;
+extern const char *RConfigReverseMode;
 extern const char *RConfigLastChangeAmount;
 extern const char *RConfigLastChangeSource;
 extern const char *RConfigLastChangeTime;

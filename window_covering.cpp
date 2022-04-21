@@ -258,6 +258,97 @@ void DeRestPluginPrivate::handleWindowCoveringClusterIndication(const deCONZ::Ap
  */
 bool DeRestPluginPrivate::addTaskWindowCovering(TaskItem &task, uint8_t cmd, uint16_t pos, uint8_t pct)
 {
+    if (task.lightNode && task.lightNode->parentResource())
+    {
+        Device *device = static_cast<Device*>(task.lightNode->parentResource());
+
+        if (device && device->managed())
+        {
+
+            bool open = false;
+            if (cmd == WINDOW_COVERING_COMMAND_OPEN)
+            {
+                open = true;
+            }
+            
+            ResourceItem *openItem = task.lightNode->item(RStateOpen);
+            const auto ddfItem = DDF_GetItem(openItem);
+            ResourceItem *liftItem = task.lightNode->item(RStateLift);
+            const auto ddfItem2 = DDF_GetItem(liftItem);
+            
+            if (!ddfItem.writeParameters.isNull())
+            {
+                StateChange change(StateChange::StateCallFunction, SC_WriteZclAttribute, task.req.dstEndpoint());
+                change.addTargetValue(RStateOpen, open);
+                task.lightNode->addStateChange(change);
+                return true;
+            }
+            else // only verify after classic command
+            {
+                StateChange change(StateChange::StateWaitSync, SC_WindowCovering, task.req.dstEndpoint());
+                change.addTargetValue(RStateOpen, open);
+                change.addParameter(QLatin1String("cmd"), cmd);
+                task.lightNode->addStateChange(change);
+            }
+            
+            if (!ddfItem2.writeParameters.isNull())
+            {
+                StateChange change(StateChange::StateCallFunction, SC_WriteZclAttribute, task.req.dstEndpoint());
+                change.addTargetValue(RStateLift, pos);
+                task.lightNode->addStateChange(change);
+                return true;
+            }
+            else // only verify after classic command
+            {
+                StateChange change(StateChange::StateWaitSync, SC_WindowCovering, task.req.dstEndpoint());
+                change.addTargetValue(RStateLift, pos);
+                change.addParameter(QLatin1String("cmd"), cmd);
+                change.addParameter(QLatin1String("pos"), pos);
+                task.lightNode->addStateChange(change);
+            }
+            
+            //For compatibility
+            uint16_t bri = pos * 254 / 100;
+            bool on = bri > 0;
+            
+            ResourceItem *onItem = task.lightNode->item(RStateOn);
+            const auto ddfItem3 = DDF_GetItem(onItem);
+            ResourceItem *briItem = task.lightNode->item(RStateBri);
+            const auto ddfItem4 = DDF_GetItem(briItem);
+
+            if (!ddfItem3.writeParameters.isNull())
+            {
+                StateChange change(StateChange::StateCallFunction, SC_WriteZclAttribute, task.req.dstEndpoint());
+                change.addTargetValue(RStateOn, on);
+                task.lightNode->addStateChange(change);
+                return true;
+            }
+            else // only verify after classic command
+            {
+                StateChange change(StateChange::StateWaitSync, SC_WindowCovering, task.req.dstEndpoint());
+                change.addTargetValue(RStateOn, on);
+                change.addParameter(QLatin1String("cmd"), cmd);
+                task.lightNode->addStateChange(change);
+            }
+            
+            if (!ddfItem4.writeParameters.isNull())
+            {
+                StateChange change(StateChange::StateCallFunction, SC_WriteZclAttribute, task.req.dstEndpoint());
+                change.addTargetValue(RStateBri, bri);
+                task.lightNode->addStateChange(change);
+                return true;
+            }
+            else // only verify after classic command
+            {
+                StateChange change(StateChange::StateWaitSync, SC_WindowCovering, task.req.dstEndpoint());
+                change.addTargetValue(RStateBri, bri);
+                change.addParameter(QLatin1String("cmd"), cmd);
+                change.addParameter(QLatin1String("pos"), pos);
+                task.lightNode->addStateChange(change);
+            }
+        }
+    }
+
     task.taskType = TaskWindowCovering;
 
     task.req.setClusterId(WINDOW_COVERING_CLUSTER_ID);
@@ -270,16 +361,16 @@ bool DeRestPluginPrivate::addTaskWindowCovering(TaskItem &task, uint8_t cmd, uin
                                   deCONZ::ZclFCDirectionClientToServer |
                                   deCONZ::ZclFCDisableDefaultResponse);
 
-    if (cmd == 0x04 || cmd == 0x05 || cmd == 0x07 || cmd == 0x08)
+    if (cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_VALUE || cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_PCT || cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_VALUE || cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_PCT)
     { // payload
         QDataStream stream(&task.zclFrame.payload(), QIODevice::WriteOnly);
         stream.setByteOrder(QDataStream::LittleEndian);
 
-        if (cmd == 0x04 || cmd == 0x07)
+        if (cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_VALUE || cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_VALUE)
         {
             stream << pos;  // 16-bit moveToPosition
         }
-        if (cmd == 0x05 || cmd == 0x08)
+        if (cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_PCT || cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_PCT)
         {
             stream << pct;  // 8-bit moveToPct
         }

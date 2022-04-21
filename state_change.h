@@ -25,6 +25,7 @@ namespace deCONZ {
 
 int SC_WriteZclAttribute(const Resource *r, const StateChange *stateChange, deCONZ::ApsController *apsCtrl);
 int SC_SetOnOff(const Resource *r, const StateChange *stateChange, deCONZ::ApsController *apsCtrl);
+int SC_WindowCovering(const Resource *r, const StateChange *stateChange, deCONZ::ApsController *apsCtrl);
 
 /*! \fn StateChangeFunction_t
 
