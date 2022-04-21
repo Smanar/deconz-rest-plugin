@@ -356,6 +356,11 @@ int SC_WindowCovering(const Resource *r, const StateChange *stateChange, deCONZ:
     zclFrame.writeToStream(stream);
 
     DBG_Printf(DBG_INFO, "SC_WindowCovering()\n");
+    
+    // for test
+    int t = r->item(RConfigReverseMode)->toNumber();
+    DBG_Printf(DBG_INFO, "Test %d\n",t);
+    
 
     return apsCtrl->apsdeDataRequest(req) == deCONZ::Success ? 0 : -2;
 }
