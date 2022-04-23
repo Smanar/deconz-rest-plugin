@@ -271,83 +271,69 @@ bool DeRestPluginPrivate::addTaskWindowCovering(TaskItem &task, uint8_t cmd, uin
                 open = true;
             }
             
-            ResourceItem *openItem = task.lightNode->item(RStateOpen);
-            const auto ddfItem = DDF_GetItem(openItem);
-            ResourceItem *liftItem = task.lightNode->item(RStateLift);
-            const auto ddfItem2 = DDF_GetItem(liftItem);
-            
-            if (!ddfItem.writeParameters.isNull())
+            // for test
+            if (task.lightNode->item(RConfigReverseMode))
             {
-                StateChange change(StateChange::StateCallFunction, SC_WriteZclAttribute, task.req.dstEndpoint());
-                change.addTargetValue(RStateOpen, open);
-                task.lightNode->addStateChange(change);
-                return true;
-            }
-            else // only verify after classic command
-            {
-                StateChange change(StateChange::StateWaitSync, SC_WindowCovering, task.req.dstEndpoint());
-                change.addTargetValue(RStateOpen, open);
-                change.addParameter(QLatin1String("cmd"), cmd);
-                task.lightNode->addStateChange(change);
-            }
-            
-            if (!ddfItem2.writeParameters.isNull())
-            {
-                StateChange change(StateChange::StateCallFunction, SC_WriteZclAttribute, task.req.dstEndpoint());
-                change.addTargetValue(RStateLift, pos);
-                task.lightNode->addStateChange(change);
-                return true;
-            }
-            else // only verify after classic command
-            {
-                StateChange change(StateChange::StateWaitSync, SC_WindowCovering, task.req.dstEndpoint());
-                change.addTargetValue(RStateLift, pos);
-                change.addParameter(QLatin1String("cmd"), cmd);
-                change.addParameter(QLatin1String("pos"), pos);
-                task.lightNode->addStateChange(change);
+                int t = task.lightNode->item(RConfigReverseMode)->toNumber();
+                DBG_Printf(DBG_INFO, "Test %d\n",t);
             }
             
             //For compatibility
             uint16_t bri = pos * 254 / 100;
             bool on = bri > 0;
             
-            ResourceItem *onItem = task.lightNode->item(RStateOn);
-            const auto ddfItem3 = DDF_GetItem(onItem);
-            ResourceItem *briItem = task.lightNode->item(RStateBri);
-            const auto ddfItem4 = DDF_GetItem(briItem);
+             DBG_Printf(DBG_INFO, "SC_WindowCovering 9\n");
+                
+            if (cmd == WINDOW_COVERING_COMMAND_OPEN || cmd == WINDOW_COVERING_COMMAND_CLOSE)
+            {
+                ResourceItem *openItem = task.lightNode->item(RStateOpen);
+                const auto ddfItem = DDF_GetItem(openItem);
+                
+                if (!ddfItem.writeParameters.isNull())
+                {
+                    StateChange change(StateChange::StateCallFunction, SC_WriteZclAttribute, task.req.dstEndpoint());
+                    change.addTargetValue(RStateOpen, open);
+                    task.lightNode->addStateChange(change);
+                    return true;
+                }
+                else // only verify after classic command
+                {
+                    StateChange change(StateChange::StateWaitSync, SC_SetOnOff, task.req.dstEndpoint());
+                    change.addTargetValue(RStateOpen, open);
+                    change.addParameter(QLatin1String("cmd"), cmd);
+                    task.lightNode->addStateChange(change);
+                }
+            }
+            else if (cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_VALUE || cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_PCT)
+            {
+                ResourceItem *liftItem = task.lightNode->item(RStateLift);
+                const auto ddfItem = DDF_GetItem(liftItem);
+                
+                if (!ddfItem.writeParameters.isNull())
+                {
+                    StateChange change(StateChange::StateCallFunction, SC_WriteZclAttribute, task.req.dstEndpoint());
+                    change.addTargetValue(RStateLift, pos);
+                    task.lightNode->addStateChange(change);
+                    return true;
+                }
+                else // only verify after classic command
+                {
+                    StateChange change(StateChange::StateWaitSync, SC_SetOnOff, task.req.dstEndpoint());
+                    change.addTargetValue(RStateLift, pos);
+                    change.addParameter(QLatin1String("cmd"), cmd);
+                    change.addParameter(QLatin1String("pos"), pos);
+                    task.lightNode->addStateChange(change);
+                }
+            }
+            else
+            {
+                return false;
+            }  
 
-            if (!ddfItem3.writeParameters.isNull())
-            {
-                StateChange change(StateChange::StateCallFunction, SC_WriteZclAttribute, task.req.dstEndpoint());
-                change.addTargetValue(RStateOn, on);
-                task.lightNode->addStateChange(change);
-                return true;
-            }
-            else // only verify after classic command
-            {
-                StateChange change(StateChange::StateWaitSync, SC_WindowCovering, task.req.dstEndpoint());
-                change.addTargetValue(RStateOn, on);
-                change.addParameter(QLatin1String("cmd"), cmd);
-                task.lightNode->addStateChange(change);
-            }
-            
-            if (!ddfItem4.writeParameters.isNull())
-            {
-                StateChange change(StateChange::StateCallFunction, SC_WriteZclAttribute, task.req.dstEndpoint());
-                change.addTargetValue(RStateBri, bri);
-                task.lightNode->addStateChange(change);
-                return true;
-            }
-            else // only verify after classic command
-            {
-                StateChange change(StateChange::StateWaitSync, SC_WindowCovering, task.req.dstEndpoint());
-                change.addTargetValue(RStateBri, bri);
-                change.addParameter(QLatin1String("cmd"), cmd);
-                change.addParameter(QLatin1String("pos"), pos);
-                task.lightNode->addStateChange(change);
-            }
         }
     }
+    
+    DBG_Printf(DBG_INFO, "SC_WindowCovering 8\n");
 
     task.taskType = TaskWindowCovering;
 
