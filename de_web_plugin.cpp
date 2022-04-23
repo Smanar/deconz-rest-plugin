@@ -163,7 +163,6 @@ static const SupportedDevice supportedDevices[] = {
     { VENDOR_BOSCH, "ISW-ZPR1-WP13", boschMacPrefix },
     { VENDOR_BOSCH, "RFDL-ZB-MS", emberMacPrefix }, // Bosch motion sensor
     { VENDOR_BOSCH2, "AIR", tiMacPrefix }, // Bosch Air quality sensor
-    { VENDOR_CENTRALITE, "Motion Sensor-A", emberMacPrefix },
     { VENDOR_CENTRALITE, "3321-S", emberMacPrefix }, // Centralite multipurpose sensor
     { VENDOR_CENTRALITE, "3325-S", emberMacPrefix }, // Centralite motion sensor
     { VENDOR_CENTRALITE, "3305-S", emberMacPrefix }, // Centralite motion sensor
@@ -8338,8 +8337,7 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const SensorFi
         if (modelId == QLatin1String("button") ||
             modelId.startsWith(QLatin1String("multi")) ||
             modelId == QLatin1String("water") ||
-            R_GetProductId(&sensorNode) == QLatin1String("NAS-AB02B0 Siren") ||
-            modelId == QLatin1String("Motion Sensor-A"))
+            R_GetProductId(&sensorNode) == QLatin1String("NAS-AB02B0 Siren"))
         {
             // no support for some IAS flags
         }
@@ -12329,8 +12327,6 @@ void DeRestPluginPrivate::handleZclAttributeReportIndication(const deCONZ::ApsDa
                     sensor.setLastAttributeReportBind(idleTotalCounter);
                 }
             }
-
-            checkPollControlClusterTask(&sensor);
         }
     }
 
@@ -17800,22 +17796,32 @@ Resource *DEV_GetResource(Resource::Handle hnd)
 // Testing code uses a mocked implementation.
 Resource *DEV_AddResource(const Sensor &sensor)
 {
-    plugin->sensors.push_back(sensor);
-    auto &s = plugin->sensors.back();
-    s.setHandle(R_CreateResourceHandle(&s, plugin->sensors.size() - 1));
+    Resource *r = DEV_GetResource(sensor.prefix(), sensor.item(RAttrUniqueId)->toString());
 
-    return &s;
+    if (!r)
+    {
+        plugin->sensors.push_back(sensor);
+        r = &plugin->sensors.back();
+        r->setHandle(R_CreateResourceHandle(r, plugin->sensors.size() - 1));
+    }
+
+    return r;
 }
 
 // Used by Device class when creating LightNodes.
 // Testing code uses a mocked implementation.
 Resource *DEV_AddResource(const LightNode &lightNode)
 {
-    plugin->nodes.push_back(lightNode);
-    auto &l = plugin->nodes.back();
-    l.setHandle(R_CreateResourceHandle(&l, plugin->nodes.size() - 1));
+    Resource *r = DEV_GetResource(lightNode.prefix(), lightNode.item(RAttrUniqueId)->toString());
 
-    return &l;
+    if (!r)
+    {
+        plugin->nodes.push_back(lightNode);
+        r = &plugin->nodes.back();
+        r->setHandle(R_CreateResourceHandle(r, plugin->nodes.size() - 1));
+    }
+
+    return r;
 }
 
 /*!  Called by init DDF to allocate new groups for config.group = "auto [,auto, ...]".
