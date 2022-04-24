@@ -293,7 +293,7 @@ bool DeRestPluginPrivate::addTaskWindowCovering(TaskItem &task, uint8_t cmd, uin
                 const auto parseParam = ddfItem.parseParameters.toMap();
                 if (parseParam.contains(QLatin1String("reverse")))
                 {
-                    int reverse = parseParam.value(QLatin1String("reverse")).toNumber();
+                    int reverse = parseParam.value(QLatin1String("reverse")).toInt();
                     DBG_Printf(DBG_INFO, "Test 2 %d\n",reverse);
                 }
                 
