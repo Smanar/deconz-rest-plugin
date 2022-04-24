@@ -277,6 +277,12 @@ bool DeRestPluginPrivate::addTaskWindowCovering(TaskItem &task, uint8_t cmd, uin
                 int t = task.lightNode->item(RConfigReverseMode)->toNumber();
                 DBG_Printf(DBG_INFO, "Test %d\n",t);
             }
+            const auto parseParam = ddfItem.parseParameters.toMap();
+            if (parseParam.contains(QLatin1String("reverse")))
+            {
+                int reverse = writeFunction = parseParam.value(QLatin1String("reverse")).toNumber();
+                DBG_Printf(DBG_INFO, "Test 2 %d\n",reverse);
+            }
             
             //For compatibility
             uint16_t bri = pos * 254 / 100;
