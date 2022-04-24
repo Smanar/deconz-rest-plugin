@@ -271,9 +271,9 @@ bool DeRestPluginPrivate::addTaskWindowCovering(TaskItem &task, uint8_t cmd, uin
                 open = true;
             }
             
-            //For compatibility
-            uint16_t bri = pct * 254 / 100;
-            bool on = bri > 0;
+            //For compatibility, not used yet
+            //uint16_t bri = pct * 254 / 100;
+            //bool on = bri > 0;
             
              DBG_Printf(DBG_INFO, "SC_WindowCovering 9\n");
                 
@@ -299,7 +299,7 @@ bool DeRestPluginPrivate::addTaskWindowCovering(TaskItem &task, uint8_t cmd, uin
                         }
                         else
                         {
-                            cmd == WINDOW_COVERING_COMMAND_OPEN;
+                            cmd = WINDOW_COVERING_COMMAND_OPEN;
                         }
                     }
                 }
