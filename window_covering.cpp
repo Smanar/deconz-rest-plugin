@@ -271,15 +271,8 @@ bool DeRestPluginPrivate::addTaskWindowCovering(TaskItem &task, uint8_t cmd, uin
                 open = true;
             }
             
-            // for test
-            if (task.lightNode->item(RConfigReverseMode))
-            {
-                int t = task.lightNode->item(RConfigReverseMode)->toNumber();
-                DBG_Printf(DBG_INFO, "Test %d\n",t);
-            }
-            
             //For compatibility
-            uint16_t bri = pos * 254 / 100;
+            uint16_t bri = pct * 254 / 100;
             bool on = bri > 0;
             
              DBG_Printf(DBG_INFO, "SC_WindowCovering 9\n");
@@ -289,12 +282,26 @@ bool DeRestPluginPrivate::addTaskWindowCovering(TaskItem &task, uint8_t cmd, uin
                 ResourceItem *openItem = task.lightNode->item(RStateOpen);
                 const auto ddfItem = DDF_GetItem(openItem);
                 
-                //to test
+                //Need To reverse ?
+                bool reverse = false;
                 const auto parseParam = ddfItem.parseParameters.toMap();
                 if (parseParam.contains(QLatin1String("reverse")))
                 {
-                    int reverse = parseParam.value(QLatin1String("reverse")).toInt();
-                    DBG_Printf(DBG_INFO, "Test 2 %d\n",reverse);
+                    reverse = parseParam.value(QLatin1String("reverse")).toBool();
+                    
+                    if (reverse)
+                    {
+                        DBG_Printf(DBG_INFO, "reverse covering %d\n",reverse);// TO REMOVE
+                        
+                        if (cmd == WINDOW_COVERING_COMMAND_OPEN)
+                        {
+                            cmd = WINDOW_COVERING_COMMAND_CLOSE;
+                        }
+                        else
+                        {
+                            cmd == WINDOW_COVERING_COMMAND_OPEN;
+                        }
+                    }
                 }
                 
                 if (!ddfItem.writeParameters.isNull())
@@ -317,19 +324,28 @@ bool DeRestPluginPrivate::addTaskWindowCovering(TaskItem &task, uint8_t cmd, uin
                 ResourceItem *liftItem = task.lightNode->item(RStateLift);
                 const auto ddfItem = DDF_GetItem(liftItem);
                 
+                //Need To reverse ?
+                bool reverse = false;
+                const auto parseParam = ddfItem.parseParameters.toMap();
+                if (parseParam.contains(QLatin1String("reverse")))
+                {
+                    pos = 255 - pos;
+                    pct = 100 - pct;
+                }
+                
                 if (!ddfItem.writeParameters.isNull())
                 {
                     StateChange change(StateChange::StateCallFunction, SC_WriteZclAttribute, task.req.dstEndpoint());
-                    change.addTargetValue(RStateLift, pos);
+                    change.addTargetValue(RStateLift, pct);
                     task.lightNode->addStateChange(change);
                     return true;
                 }
                 else // only verify after classic command
                 {
                     StateChange change(StateChange::StateWaitSync, SC_SetOnOff, task.req.dstEndpoint());
-                    change.addTargetValue(RStateLift, pos);
+                    change.addTargetValue(RStateLift, pct);
                     change.addParameter(QLatin1String("cmd"), cmd);
-                    change.addParameter(QLatin1String("pos"), pos);
+                    change.addParameter(QLatin1String("pct"), pct);
                     task.lightNode->addStateChange(change);
                 }
             }
