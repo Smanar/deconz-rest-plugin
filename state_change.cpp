@@ -281,7 +281,7 @@ int SC_WindowCovering(const Resource *r, const StateChange *stateChange, deCONZ:
     Q_ASSERT(apsCtrl);
 
     quint8 cmd = 0xff;
-    uint16_t bri = 0;
+    uint16_t pct = 0;
 
     if (r->parentResource())
     {
@@ -300,14 +300,14 @@ int SC_WindowCovering(const Resource *r, const StateChange *stateChange, deCONZ:
                 cmd = static_cast<quint8>(val);
             }
         }
-        else if (i.name == QLatin1String("pos"))
+        else if (i.name == QLatin1String("pct"))
         {
             bool ok;
             auto val =  i.value.toUInt(&ok);
 
             if (ok && (val < 100))
             {
-                bri = static_cast<uint16_t>(val);
+                pct = static_cast<uint16_t>(val);
             }
         }
     }
@@ -343,11 +343,11 @@ int SC_WindowCovering(const Resource *r, const StateChange *stateChange, deCONZ:
 
         if (cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_VALUE || cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_VALUE)
         {
-            stream << bri;
+            stream << pct;
         }
         if (cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_PCT || cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_PCT)
         {
-            stream << bri;
+            stream << pct;
         }
     }
 
