@@ -264,21 +264,25 @@ bool DeRestPluginPrivate::addTaskWindowCovering(TaskItem &task, uint8_t cmd, uin
 
         if (device && device->managed())
         {
-
-            bool open = false;
-            if (cmd == WINDOW_COVERING_COMMAND_OPEN)
-            {
-                open = true;
-            }
             
             //For compatibility, not used yet
             //uint16_t bri = pct * 254 / 100;
             //bool on = bri > 0;
             
-             DBG_Printf(DBG_INFO, "SC_WindowCovering 9\n");
-                
-            if (cmd == WINDOW_COVERING_COMMAND_OPEN || cmd == WINDOW_COVERING_COMMAND_CLOSE)
+            DBG_Printf(DBG_INFO, "SC_WindowCovering 9\n");
+            
+            if (cmd == WINDOW_COVERING_COMMAND_STOP)
             {
+                // No state change to do ?
+            }
+            else if (cmd == WINDOW_COVERING_COMMAND_OPEN || cmd == WINDOW_COVERING_COMMAND_CLOSE)
+            {
+                bool open = false;
+                if (cmd == WINDOW_COVERING_COMMAND_OPEN)
+                {
+                    open = true;
+                }
+                
                 ResourceItem *openItem = task.lightNode->item(RStateOpen);
                 const auto ddfItem = DDF_GetItem(openItem);
                 
@@ -313,7 +317,7 @@ bool DeRestPluginPrivate::addTaskWindowCovering(TaskItem &task, uint8_t cmd, uin
                 }
                 else // only verify after classic command
                 {
-                    StateChange change(StateChange::StateWaitSync, SC_SetOnOff, task.req.dstEndpoint());
+                    StateChange change(StateChange::StateWaitSync, SC_WindowCovering, task.req.dstEndpoint());
                     change.addTargetValue(RStateOpen, open);
                     change.addParameter(QLatin1String("cmd"), cmd);
                     task.lightNode->addStateChange(change);
@@ -342,7 +346,7 @@ bool DeRestPluginPrivate::addTaskWindowCovering(TaskItem &task, uint8_t cmd, uin
                 }
                 else // only verify after classic command
                 {
-                    StateChange change(StateChange::StateWaitSync, SC_SetOnOff, task.req.dstEndpoint());
+                    StateChange change(StateChange::StateWaitSync, SC_WindowCovering, task.req.dstEndpoint());
                     change.addTargetValue(RStateLift, pct);
                     change.addParameter(QLatin1String("cmd"), cmd);
                     change.addParameter(QLatin1String("pct"), pct);
