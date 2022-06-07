@@ -682,7 +682,14 @@ DeRestPluginPrivate::DeRestPluginPrivate(QObject *parent) :
 
         if (filterBronze) { filter.append("Bronze"); }
         if (filterSilver) { filter.append("Silver"); }
-        if (filterGold) { filter.append("Gold"); }
+        if (filterGold)
+        {
+            filter.append("Gold");
+        }
+        else
+        {
+            DBG_Printf(DBG_INFO, "Warning: DDF Gold status is not enabled\n");
+        }
 
         deviceDescriptions->setEnabledStatusFilter(filter);
     }
@@ -828,20 +835,18 @@ DeRestPluginPrivate::DeRestPluginPrivate(QObject *parent) :
         queSaveDb(DB_GROUPS, DB_LONG_SAVE_DELAY);
     }
 
-    connect(apsCtrl, SIGNAL(apsdeDataConfirm(const deCONZ::ApsDataConfirm&)),
-            this, SLOT(apsdeDataConfirm(const deCONZ::ApsDataConfirm&)));
+    connect(apsCtrl, SIGNAL(apsdeDataConfirm(deCONZ::ApsDataConfirm)),
+            this, SLOT(apsdeDataConfirm(deCONZ::ApsDataConfirm)));
 
-    connect(apsCtrl, SIGNAL(apsdeDataIndication(const deCONZ::ApsDataIndication&)),
-            this, SLOT(apsdeDataIndication(const deCONZ::ApsDataIndication&)));
+    connect(apsCtrl, SIGNAL(apsdeDataIndication(deCONZ::ApsDataIndication)),
+            this, SLOT(apsdeDataIndication(deCONZ::ApsDataIndication)));
 
     connect(apsCtrl, SIGNAL(nodeEvent(deCONZ::NodeEvent)),
             this, SLOT(nodeEvent(deCONZ::NodeEvent)));
 
-#if DECONZ_LIB_VERSION >= 0x010E00
-    connect(apsCtrl, &deCONZ::ApsController::sourceRouteCreated, this, &DeRestPluginPrivate::storeSourceRoute);
-    connect(apsCtrl, &deCONZ::ApsController::sourceRouteDeleted, this, &DeRestPluginPrivate::deleteSourceRoute);
-    connect(apsCtrl, &deCONZ::ApsController::nodesRestored, this, &DeRestPluginPrivate::restoreSourceRoutes, Qt::QueuedConnection);
-#endif
+    connect(apsCtrl, SIGNAL(sourceRouteCreated(deCONZ::SourceRoute)), this, SLOT(storeSourceRoute(deCONZ::SourceRoute)));
+    connect(apsCtrl, SIGNAL(sourceRouteDeleted(QString)), this, SLOT(deleteSourceRoute(QString)));
+    connect(apsCtrl, SIGNAL(nodesRestored()), this, SLOT(restoreSourceRoutes()), Qt::QueuedConnection);
 
     deCONZ::GreenPowerController *gpCtrl = deCONZ::GreenPowerController::instance();
 
@@ -933,7 +938,7 @@ DeRestPluginPrivate::DeRestPluginPrivate(QObject *parent) :
     initResetDeviceApi();
     initFirmwareUpdate();
     //restoreWifiState();
-    indexRulesTriggers();
+    needRuleCheck = RULE_CHECK_DELAY;
 
     QTimer::singleShot(3000, this, SLOT(initWiFi()));
 
@@ -1103,7 +1108,7 @@ void DeRestPluginPrivate::apsdeDataIndicationDevice(const deCONZ::ApsDataIndicat
                     }
                 }
             }
-            break;
+            continue;
         }
 
         {   // TODO this is too messy
@@ -1127,6 +1132,9 @@ void DeRestPluginPrivate::apsdeDataIndicationDevice(const deCONZ::ApsDataIndicat
                 enqueueEvent(Event(r->prefix(), reachable->descriptor().suffix, r->item(RAttrId)->toString(), device->key()));
             }
         }
+
+        // for state/* changes, only emit the state/lastupdated event once for the first state/* item.
+        bool eventLastUpdatedEmitted = false;
 
         for (int i = 0; i < r->itemCount(); i++)
         {
@@ -1179,11 +1187,12 @@ void DeRestPluginPrivate::apsdeDataIndicationDevice(const deCONZ::ApsDataIndicat
                     }
                 }
 
-                if (item->descriptor().suffix[0] == 's') // state/*
+                if (!eventLastUpdatedEmitted && item->descriptor().suffix[0] == 's') // state/*
                 {
                     ResourceItem *lastUpdated = r->item(RStateLastUpdated);
                     if (lastUpdated && idItem)
                     {
+                        eventLastUpdatedEmitted = true;
                         lastUpdated->setValue(item->lastSet());
                         enqueueEvent(Event(r->prefix(), lastUpdated->descriptor().suffix, idItem->toString(), device->key()));
                     }
@@ -2238,7 +2247,7 @@ void DeRestPluginPrivate::gpDataIndication(const deCONZ::GpDataIndication &ind)
             enqueueEvent(e);
             queSaveDb(DB_SENSORS , DB_SHORT_SAVE_DELAY);
 
-            indexRulesTriggers();
+            needRuleCheck = RULE_CHECK_DELAY;
             gpProcessButtonEvent(ind);
         }
         else if (sensor && sensor->deletedState() == Sensor::StateNormal)
@@ -2984,7 +2993,7 @@ void DeRestPluginPrivate::addLightNode(const deCONZ::Node *node)
         if (DB_GetSubDeviceItemCount(lightNode.item(RAttrUniqueId)->toLatin1String()) > 0)
         {
             const DeviceDescription &ddf = deviceDescriptions->get(&lightNode);
-            if (ddf.isValid() && (DEV_TestManaged() || deviceDescriptions->enabledStatusFilter().contains(ddf.status)))
+            if (ddf.isValid() && (DEV_TestManaged() || DDF_IsStatusEnabled(ddf.status)))
             {
                 if (ddf.path.isEmpty())
                 {
@@ -3215,7 +3224,7 @@ void DeRestPluginPrivate::addLightNode(const deCONZ::Node *node)
             enqueueEvent(e);
         }
 
-        indexRulesTriggers();
+        needRuleCheck = RULE_CHECK_DELAY;
 
         q->startZclAttributeTimer(checkZclAttributesDelay);
         updateLightEtag(lightNode2);
@@ -4378,7 +4387,11 @@ void DeRestPluginPrivate::checkSensorNodeReachable(Sensor *sensor, const deCONZ:
 
             updated = true;
         }
-        if (!DEV_TestStrict())
+
+        auto *device = DEV_GetDevice(m_devices, sensor->address().ext());
+        const bool devManaged = device && device->managed();
+
+        if (!DEV_TestStrict() && !devManaged)
         {
             if (sensor->type() == QLatin1String("ZHATime") && !sensor->mustRead(READ_TIME))
             {
@@ -8466,7 +8479,7 @@ void DeRestPluginPrivate::addSensorNode(const deCONZ::Node *node, const SensorFi
         sensors.push_back(sensorNode);
         sensor2 = &sensors.back();
         updateSensorEtag(sensor2);
-        indexRulesTriggers();
+        needRuleCheck = RULE_CHECK_DELAY;
         device->addSubDevice(sensor2);
     }
 
@@ -11184,7 +11197,10 @@ bool DeRestPluginPrivate::processZclAttributes(Sensor *sensorNode)
         }
     }
 
-    if (!DEV_TestStrict())
+    auto *device = DEV_GetDevice(m_devices, sensorNode->address().ext());
+    const bool devManaged = device && device->managed();
+
+    if (!DEV_TestStrict() && !devManaged)
     {
         if (sensorNode->mustRead(READ_TIME) && tNow > sensorNode->nextReadTime(READ_TIME))
         {
@@ -15265,6 +15281,11 @@ void DeRestPluginPrivate::delayedFastEnddeviceProbe(const deCONZ::NodeEvent *eve
 
         if (!hasNodeDescriptor)
         {
+            if (DEV_TestManaged())
+            {
+                return; // Device code handles this
+            }
+
             DBG_Printf(DBG_INFO, "[1] get node descriptor for 0x%016llx\n", sc->address.ext());
 
             if (ZDP_NodeDescriptorReq(sc->address, apsCtrl))
@@ -15280,6 +15301,11 @@ void DeRestPluginPrivate::delayedFastEnddeviceProbe(const deCONZ::NodeEvent *eve
 
         if (!hasActiveEndpoints)
         {
+            if (DEV_TestManaged())
+            {
+                return; // Device code handles this
+            }
+
             DBG_Printf(DBG_INFO, "[2] get active endpoints for 0x%016llx\n", sc->address.ext());
 
             if (ZDP_ActiveEndpointsReq(sc->address, apsCtrl))
@@ -15308,7 +15334,12 @@ void DeRestPluginPrivate::delayedFastEnddeviceProbe(const deCONZ::NodeEvent *eve
                     }
                 }
 
-                if (ep) // fetch this
+                if (DEV_TestManaged())
+                {
+                    return; // Device code handles this
+                }
+
+                if (ep) // fetch
                 {
                     DBG_Printf(DBG_INFO, "[3] get simple descriptor 0x%02X for 0x%016llx\n", ep, sc->address.ext());
 
@@ -16404,6 +16435,15 @@ void DeRestPlugin::idleTimerFired()
         enqueueEvent(Event(RConfig, RConfigLocalTime, 0));
     }
 
+    if (d->needRuleCheck > 0) // count down from RULE_CHECK_DELAY
+    {
+        d->needRuleCheck--;
+        if (d->needRuleCheck == 0)
+        {
+            d->indexRulesTriggers();
+        }
+    }
+
     if (d->idleLastActivity < IDLE_USER_LIMIT)
     {
         return;
@@ -16894,7 +16934,7 @@ void DeRestPlugin::idleTimerFired()
                             }
                         }
 
-                        if (!DEV_TestStrict())
+                        if (!DEV_TestStrict() && !devManaged)
                         {
                             if (*ci == TIME_CLUSTER_ID)
                             {
@@ -18229,7 +18269,7 @@ void DeRestPluginPrivate::pollNextDevice()
                 if (l.parentResource())
                 {
                     Device *device = static_cast<Device*>(l.parentResource());
-                    if (device->managed())
+                    if (device && device->managed())
                     {
                         continue;
                     }
@@ -18247,7 +18287,7 @@ void DeRestPluginPrivate::pollNextDevice()
                 if (s.parentResource())
                 {
                     Device *device = static_cast<Device*>(s.parentResource());
-                    if (device->managed())
+                    if (device && device->managed())
                     {
                         continue;
                     }
