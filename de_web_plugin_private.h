@@ -227,6 +227,7 @@ using namespace deCONZ::literals;
 #define LEGRAND_CONTROL_CLUSTER_ID            0xFC40
 #define XIAOMI_CLUSTER_ID                     0xFCC0
 #define ADUROLIGHT_CLUSTER_ID                 0xFCCC
+#define XIAOYAN_CLUSTER_ID                    0xFCCC
 #define XAL_CLUSTER_ID                        0xFCCE
 #define BOSCH_AIR_QUALITY_CLUSTER_ID          quint16(0xFDEF)
 
@@ -256,6 +257,9 @@ using namespace deCONZ::literals;
 #define WINDOW_COVERING_COMMAND_GOTO_LIFT_PCT   0x05
 #define WINDOW_COVERING_COMMAND_GOTO_TILT_VALUE 0x07
 #define WINDOW_COVERING_COMMAND_GOTO_TILT_PCT   0x08
+
+#define XIAOYAN_ATTRID_ROTATION_ANGLE      0x001B
+#define XIAOYAN_ATTRID_DURATION            0x001A
 
 #define MULTI_STATE_INPUT_PRESENT_VALUE_ATTRIBUTE_ID quint16(0x0055)
 
@@ -859,13 +863,13 @@ enum TaskType
     TaskIncBrightness = 35,
     TaskWindowCovering = 36,
     TaskThermostat = 37,
-    // Danalock support
-    TaskDoorLock = 38,
-    TaskDoorUnlock = 39,
+    TaskDoorLock = 38, // Danalock support
+    TaskHueGradient = 45,
     TaskSyncTime = 40,
     TaskTuyaRequest = 41,
     TaskXmasLightStrip = 42,
-    TaskSimpleMetering = 43
+    TaskSimpleMetering = 43,
+    TaskHueEffect = 44
 };
 
 enum XmasLightStripMode
@@ -985,6 +989,7 @@ enum ApiVersion
     ApiVersion_1_DDEL,   //!< version 1.0, "Accept: application/vnd.ddel.v1"
     ApiVersion_1_1_DDEL, //!< version 1.1, "Accept: application/vnd.ddel.v1.1"
     ApiVersion_2_DDEL,   //!< version 2.0, "Accept: application/vnd.ddel.v2"
+    ApiVersion_3_DDEL    //!< version 3.0, "Accept: application/vnd.ddel.v3"
 };
 
 enum ApiAuthorisation
@@ -1142,9 +1147,11 @@ public:
     int getLightData(const ApiRequest &req, ApiResponse &rsp);
     int getLightState(const ApiRequest &req, ApiResponse &rsp);
     int setLightState(const ApiRequest &req, ApiResponse &rsp);
+    int setLightConfig(const ApiRequest &req, ApiResponse &rsp);
     int setWindowCoveringState(const ApiRequest &req, ApiResponse &rsp, TaskItem &taskRef, QVariantMap &map);
     int setWarningDeviceState(const ApiRequest &req, ApiResponse &rsp, TaskItem &taskRef, QVariantMap &map);
     int setTuyaDeviceState(const ApiRequest &req, ApiResponse &rsp, TaskItem &taskRef, QVariantMap &map);
+    int setDoorLockState(const ApiRequest &req, ApiResponse &rsp, TaskItem &taskRef, QVariantMap &map);
     int setLightAttributes(const ApiRequest &req, ApiResponse &rsp);
     int deleteLight(const ApiRequest &req, ApiResponse &rsp);
     int removeAllScenes(const ApiRequest &req, ApiResponse &rsp);
@@ -1286,6 +1293,7 @@ public Q_SLOTS:
     void apsdeDataIndicationDevice(const deCONZ::ApsDataIndication &ind, Device *device);
     void apsdeDataIndication(const deCONZ::ApsDataIndication &ind);
     void apsdeDataConfirm(const deCONZ::ApsDataConfirm &conf);
+    void apsdeDataRequestEnqueued(const deCONZ::ApsDataRequest &req);
     void gpDataIndication(const deCONZ::GpDataIndication &ind);
     void gpProcessButtonEvent(const deCONZ::GpDataIndication &ind);
     void configurationChanged();
@@ -1516,7 +1524,6 @@ public:
     bool addTaskSetBrightness(TaskItem &task, uint8_t bri, bool withOnOff);
     bool addTaskIncColorTemperature(TaskItem &task, int32_t ct);
     bool addTaskIncBrightness(TaskItem &task, int16_t bri);
-    bool addTaskStopBrightness(TaskItem &task);
     bool addTaskSetColorTemperature(TaskItem &task, uint16_t ct);
     bool addTaskSetEnhancedHue(TaskItem &task, uint16_t hue);
     bool addTaskSetSaturation(TaskItem &task, uint8_t sat);
@@ -1552,8 +1559,15 @@ public:
     bool addTaskFanControlReadWriteAttribute(TaskItem &task, uint8_t readOrWriteCmd, uint16_t attrId, uint8_t attrType, uint32_t attrValue, uint16_t mfrCode=0);
     bool addTaskSimpleMeteringReadWriteAttribute(TaskItem &task, uint8_t readOrWriteCmd, uint16_t attrId, uint8_t attrType, uint32_t attrValue, uint16_t mfrCode=0);
 
+    // Advanced features of Hue lights.
+    QStringList getHueEffectNames(quint64 effectBitmap);
+    QStringList getHueGradientStyleNames(quint16 styleBitmap);
+    bool addTaskHueEffect(TaskItem &task, QString &effect);
+    bool validateHueGradient(const ApiRequest &req, ApiResponse &rsp, QVariantMap &gradient, quint16 styleBitmap);
+    bool addTaskHueGradient(TaskItem &task, QVariantMap &gradient);
+
     // Merry Christmas!
-    bool isXmasLightStrip(LightNode *lightNode);
+    bool isXmasLightStrip(const LightNode *lightNode);
     bool addTaskXmasLightStripOn(TaskItem &task, bool on);
     bool addTaskXmasLightStripMode(TaskItem &task, XmasLightStripMode mode);
     bool addTaskXmasLightStripWhite(TaskItem &task, quint8 bri);
@@ -1611,7 +1625,6 @@ public:
     bool deserialiseThermostatSchedule(const QString &s, QVariantMap *schedule);
     void handleSimpleMeteringClusterIndication(const deCONZ::ApsDataIndication &ind, const deCONZ::ZclFrame &zclFrame);
     void handleElectricalMeasurementClusterIndication(const deCONZ::ApsDataIndication &ind, const deCONZ::ZclFrame &zclFrame);
-    void handleXiaoyanClusterIndication(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame);
     void handleXiaomiLumiClusterIndication(const deCONZ::ApsDataIndication &ind, deCONZ::ZclFrame &zclFrame);
     void handleOccupancySensingClusterIndication(const deCONZ::ApsDataIndication &ind, const deCONZ::ZclFrame &zclFrame);
     void handlePowerConfigurationClusterIndication(const deCONZ::ApsDataIndication &ind, const deCONZ::ZclFrame &zclFrame);

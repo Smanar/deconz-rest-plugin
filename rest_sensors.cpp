@@ -789,9 +789,9 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                                                QString("invalid value, %1, for parameter %2").arg(map[pi.key()].toString()).arg(pi.key())));
                     continue;
                 }
-                
+
                 const auto &ddfItem = DDF_GetItem(item);
-                
+
                 if (!ddfItem.writeParameters.isNull())
                 {
                     const auto writeParam = ddfItem.writeParameters.toMap();
@@ -802,6 +802,16 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                         if (ok && stateTimeout > 0)
                         {
                             change.setStateTimeoutMs(1000 * stateTimeout);
+                        }
+                    }
+                    
+                    if (writeParam.contains(QLatin1String("change.timeout")))
+                    {
+                        int changeTimeout = writeParam.value(QLatin1String("change.timeout")).toInt(&ok);
+
+                        if (ok && changeTimeout > 0)
+                        {
+                            change.setChangeTimeoutMs(1000 * changeTimeout);
                         }
                     }
                 }
@@ -821,7 +831,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                     }
                 }
 
-                if (rid.suffix == RConfigDeviceMode && !data.string.isEmpty() && RConfigDeviceModeValues.indexOf(data.string) >= 0)
+                if (rid.suffix == RConfigDeviceMode) // String
                 {
                     if (devManaged && rsub)
                     {
@@ -830,7 +840,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                         updated = true;
                     }
                 }
-                else if (rid.suffix == RConfigClickMode && !data.string.isEmpty()) // String
+                else if (rid.suffix == RConfigClickMode) // String
                 {
                     if (devManaged && rsub)
                     {
@@ -900,7 +910,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                         updated = true;
                     }
                 }
-                else if (rid.suffix == RConfigTriggerDistance && !data.string.isEmpty()) // String
+                else if (rid.suffix == RConfigTriggerDistance) // String
                 {
                     if (devManaged && rsub)
                     {
@@ -940,6 +950,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                 else if (rid.suffix == RConfigLat || rid.suffix == RConfigLong) // String
                 {
                     double coordinate = data.string.toDouble(&ok);
+                    Q_UNUSED(coordinate);
                     if (!ok || data.string.isEmpty())
                     {
                         rsp.list.append(errorToMap(ERR_INVALID_VALUE, QString("/sensors/%1/config/%2").arg(id).arg(pi.key()),
@@ -970,7 +981,6 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                     if (devManaged && rsub)
                     {
                         change.addTargetValue(rid.suffix, data.boolean);
-                        change.setChangeTimeoutMs(60000);    // 1 min
                         rsub->addStateChange(change);
                         updated = true;
                     }
@@ -1151,6 +1161,15 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                         updated = true;
                     }
                 }
+                else if (rid.suffix == RConfigUnoccupiedHeatSetpoint) // Signed integer
+                {
+                    if (devManaged && rsub)
+                    {
+                        change.addTargetValue(rid.suffix, data.integer);
+                        rsub->addStateChange(change);
+                        updated = true;
+                    }
+                }
                 else if (rid.suffix == RConfigHeatSetpoint) // Signed integer
                 {
                     if (sensor->modelId().startsWith(QLatin1String("SPZB"))) // Eurotronic Spirit
@@ -1183,7 +1202,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                         }
                     }
                     else if (sensor->modelId() == QLatin1String("eTRV0100") || sensor->modelId() == QLatin1String("TRV001") ||
-                             sensor->modelId() == QLatin1String("eT093WRO"))
+                             sensor->modelId() == QLatin1String("eT093WRO") || sensor->modelId() == QLatin1String("eTRV0103"))
                     {
                         if (addTaskThermostatCmd(task, VENDOR_DANFOSS, 0x40, data.integer, 0))
                         {
@@ -1265,6 +1284,12 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                             updated = true;
                         }
                     }
+                    else if (devManaged && rsub) // Managed by DDF ?
+                    {
+                        change.addTargetValue(rid.suffix, data.integer);
+                        rsub->addStateChange(change);
+                        updated = true;
+                    }
                     else
                     {
                         if (addTaskThermostatReadWriteAttribute(task, deCONZ::ZclWriteAttributesId, 0x0000, THERM_ATTRID_OCCUPIED_HEATING_SETPOINT, deCONZ::Zcl16BitInt, data.integer))
@@ -1284,7 +1309,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                 {
                     ok = false;
 
-                    if (devManaged)
+                    if (devManaged && rsub)
                     {
                         const QVariantMap m = DDF_GetMetaKeyValues(sensor, item);
 
@@ -1621,7 +1646,13 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                             }
                         }
                     }
-
+                    else if (devManaged && rsub) // Managed by DDF ?
+                    {
+                        DBG_Printf(DBG_INFO_L2, "debug test send preset\n");
+                        change.addTargetValue(rid.suffix, data.string);
+                        rsub->addStateChange(change);
+                        updated = true;
+                    }
                 }
                 else if (rid.suffix == RConfigLocked) // Boolean
                 {
@@ -1678,7 +1709,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                             updated = true;
                         }
                     }
-                    else if (devManaged && rsub)
+                    else if (devManaged && rsub) // Managed by DDF ? why integer ?
                     {
                         data.uinteger = data.boolean; // Use integer representation
                         change.addTargetValue(rid.suffix, data.uinteger);
@@ -1738,7 +1769,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                     }
                     else if (devManaged && rsub)
                     {
-                        change.addTargetValue(rid.suffix, data.uinteger);
+                        change.addTargetValue(rid.suffix, data.boolean);
                         rsub->addStateChange(change);
                         updated = true;
                     }
@@ -1806,20 +1837,29 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                 }
                 else if (rid.suffix == RConfigWindowOpen) // Boolean
                 {
-                    QByteArray tuyaData = QByteArray("\x00", 1); // Config on / off
-
-                    if (data.boolean) { tuyaData = QByteArray("\x01", 1); }
-
-                    qint8 dpIdentifier = DP_IDENTIFIER_WINDOW_OPEN;
-
-                    if (R_GetProductId(sensor) == QLatin1String("Tuya_THD WZB-TRVL TRV") ||
-                        R_GetProductId(sensor) == QLatin1String("Tuya_THD BRT-100"))
+                    if (!devManaged)
                     {
-                        dpIdentifier = DP_IDENTIFIER_WINDOW_OPEN2;
+                        QByteArray tuyaData = QByteArray("\x00", 1); // Config on / off
+
+                        if (data.boolean) { tuyaData = QByteArray("\x01", 1); }
+
+                        qint8 dpIdentifier = DP_IDENTIFIER_WINDOW_OPEN;
+
+                        if (R_GetProductId(sensor) == QLatin1String("Tuya_THD WZB-TRVL TRV") ||
+                            R_GetProductId(sensor) == QLatin1String("Tuya_THD BRT-100"))
+                        {
+                            dpIdentifier = DP_IDENTIFIER_WINDOW_OPEN2;
+                        }
+
+                        if (sendTuyaRequest(task, TaskThermostat, DP_TYPE_BOOL, dpIdentifier, tuyaData))
+                        {
+                            updated = true;
+                        }
                     }
-
-                    if (sendTuyaRequest(task, TaskThermostat, DP_TYPE_BOOL, dpIdentifier, tuyaData))
+                    else if (devManaged && rsub) // Managed by DDF ?
                     {
+                        change.addTargetValue(rid.suffix, data.boolean);
+                        rsub->addStateChange(change);
                         updated = true;
                     }
                 }
@@ -1880,19 +1920,7 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                 {
                     if (!devManaged)
                     {
-                        if (sensor->modelId().startsWith(QLatin1String("ZHEMI101")))
-                        {
-                            const auto match = matchKeyValue(data.uinteger, RConfigInterfaceModeValuesZHEMI);
-
-                            if (match.key)
-                            {
-                                if (addTaskSimpleMeteringReadWriteAttribute(task, deCONZ::ZclWriteAttributesId, METERING_ATTRID_INTERFACE_MODE, deCONZ::Zcl16BitEnum, match.value, VENDOR_DEVELCO))
-                                {
-                                    updated = true;
-                                }
-                            }
-                        }
-                        else if (sensor->modelId().startsWith(QLatin1String("EMIZB-1")))
+                        if (sensor->modelId().startsWith(QLatin1String("EMIZB-1")))
                         {
                             const auto match = matchKeyValue(data.uinteger, RConfigInterfaceModeValuesEMIZB);
 
@@ -1934,6 +1962,15 @@ int DeRestPluginPrivate::changeSensorConfig(const ApiRequest &req, ApiResponse &
                             // if the device has groupcast bindings check for reconfiguration
                             enqueueEvent(Event(RDevices, REventDDFReload, 0, sensor->address().ext()));
                         }
+                    }
+                }
+                else if (rid.suffix == RConfigReportGrid)
+                {
+                    if (devManaged && rsub)
+                    {
+                        change.addTargetValue(rid.suffix, data.boolean);
+                        rsub->addStateChange(change);
+                        updated = true;
                     }
                 }
                 else if (QString(rid.suffix).startsWith("config/ubisys_j1_")) // Unsigned integer
@@ -2364,7 +2401,7 @@ int DeRestPluginPrivate::changeSensorState(const ApiRequest &req, ApiResponse &r
                         val = val.toInt() + item2->toNumber();
                         if (rid.suffix == RStateHumidity)
                         {
-                            val = val < 0 ? 0 : val > 10000 ? 10000 : val;
+                            val = val.toInt() < 0 ? 0 : val.toInt() > 10000 ? 10000 : val;
                         }
                     }
                 }
@@ -2780,6 +2817,7 @@ bool DeRestPluginPrivate::sensorToMap(const Sensor *sensor, QVariantMap &map, co
         }
         else if (rid.suffix == RAttrLastAnnounced) { map["lastannounced"] = item->toString(); }
         else if (rid.suffix == RAttrLastSeen) { map["lastseen"] = item->toString(); }
+        else if (rid.suffix == RAttrProductName) { map["productname"] = item->toString(); }
     }
     if (iox && ioy && ioz)
     {
@@ -2910,8 +2948,24 @@ void DeRestPluginPrivate::handleSensorEvent(const Event &e)
 
     Device *device = DEV_ParentDevice(sensor);
 
+    if (device && device->managed())
+    {
+        if (e.what() == RStatePresence || e.what() == RStateVibration)
+        {
+            ResourceItem *item = sensor->item(e.what());
+            if (item && item->toBool()) {
+                ResourceItem *item2 = sensor->item(RConfigDuration);
+                if (item2 && item2->toNumber() > 0)
+                {
+                    DBG_Printf(DBG_DDF, "%s/%s auto reset in %us\n", sensor->item(RAttrUniqueId)->toCString(), qPrintable(e.what()), (quint16) item2->toNumber());
+                    sensor->durationDue = item->lastSet().addSecs(item2->toNumber());
+                }
+            }
+        }
+    }
+
     // speedup sensor state check
-    if ((e.what() == RStatePresence || e.what() == RStateButtonEvent) &&
+    if ((e.what() == RStatePresence || e.what() == RStateButtonEvent || e.what() == RStateVibration) &&
         sensor && sensor->durationDue.isValid())
     {
         sensorCheckFast = CHECK_SENSOR_FAST_ROUNDS;
@@ -3243,7 +3297,7 @@ void DeRestPluginPrivate::handleSensorEvent(const Event &e)
             return;
         }
 
-        QStringList gids = item->toString().split(',', QString::SkipEmptyParts);
+        QStringList gids = item->toString().split(',', SKIP_EMPTY_PARTS);
 
         for (int j = 0; j < gids.size(); j++)
         {
@@ -3385,6 +3439,7 @@ void DeRestPluginPrivate::checkSensorStateTimerFired()
                     DBG_Printf(DBG_INFO, "sensor %s (%s): disable presence\n", qPrintable(sensor->id()), qPrintable(sensor->modelId()));
                     item->setValue(false);
                     sensor->updateStateTimestamp();
+                    sensor->setNeedSaveDatabase(true);
                     enqueueEvent(Event(RSensors, RStatePresence, sensor->id(), item));
                     enqueueEvent(Event(RSensors, RStateLastUpdated, sensor->id()));
                     updateSensorEtag(sensor);
@@ -3412,6 +3467,7 @@ void DeRestPluginPrivate::checkSensorStateTimerFired()
                         item->setValue(S_BUTTON_1 + S_BUTTON_ACTION_HOLD);
                         DBG_Printf(DBG_INFO, "[INFO] - Button %u Hold %s\n", item->toNumber(), qPrintable(sensor->modelId()));
                         sensor->updateStateTimestamp();
+                        sensor->setNeedSaveDatabase(true);
                         enqueueEvent(Event(RSensors, RStateButtonEvent, sensor->id(), item));
                         enqueueEvent(Event(RSensors, RStateLastUpdated, sensor->id()));
                         updateSensorEtag(sensor);
@@ -3430,6 +3486,7 @@ void DeRestPluginPrivate::checkSensorStateTimerFired()
                         item->setValue(btn + S_BUTTON_ACTION_HOLD);
                         DBG_Printf(DBG_INFO, "FoH switch button %d Hold %s\n", item->toNumber(), qPrintable(sensor->modelId()));
                         sensor->updateStateTimestamp();
+                        sensor->setNeedSaveDatabase(true);
                         enqueueEvent(Event(RSensors, RStateButtonEvent, sensor->id(), item));
                         enqueueEvent(Event(RSensors, RStateLastUpdated, sensor->id()));
                         updateSensorEtag(sensor);
@@ -3442,6 +3499,7 @@ void DeRestPluginPrivate::checkSensorStateTimerFired()
                     {
                         DBG_Printf(DBG_INFO, "sensor %s (%s): disable vibration\n", qPrintable(sensor->id()), qPrintable(sensor->modelId()));
                         item->setValue(false);
+                        sensor->setNeedSaveDatabase(true);
                         sensor->updateStateTimestamp();
                         enqueueEvent(Event(RSensors, RStateVibration, sensor->id(), item));
                         enqueueEvent(Event(RSensors, RStateLastUpdated, sensor->id()));

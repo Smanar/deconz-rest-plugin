@@ -9,7 +9,6 @@
  */
 
 #include <QTimeZone>
-#include "air_quality.h"
 #include "device_access_fn.h"
 #include "device_descriptions.h"
 #include "device_js/device_js.h"
@@ -95,6 +94,7 @@ enum TuyaCommandId : unsigned char
     TY_DATA_RESPONSE             = 0x01,
     TY_DATA_REPORT               = 0x02,
     TY_DATA_QUERY                = 0x03,
+    TY_DATA_STATUS_SEARCH        = 0x06,
     TUYA_MCU_VERSION_REQ         = 0x10,
     TUYA_MCU_VERSION_RSP         = 0x11,
     TUYA_MCU_OTA_NOTIFY          = 0x12,
@@ -365,7 +365,7 @@ bool evalZclFrame(Resource *r, ResourceItem *item, const deCONZ::ApsDataIndicati
 /*! A general purpose function to map number values of a source item to a string which is stored in \p item .
 
     The item->parseParameters() is expected to be an object (given in the device description file).
-    {"fn": "numtostring", "srcitem": suffix, "op": operator, "to": array}
+    {"fn": "numtostr", "srcitem": suffix, "op": operator, "to": array}
     - srcitem: the suffix of the source item which holds the numeric value
     - op: (lt | le | eq | gt | ge) the operator used to match the 'to' array
     - to: [number, string, [number, string], ...] an sorted array to map 'number -> string' with the given operator
@@ -440,7 +440,7 @@ bool parseNumericToString(Resource *r, ResourceItem *item, const deCONZ::ApsData
 
     auto i = std::find_if(to.cbegin(), to.cend(), [num, op](const QVariant &var)
     {
-        if (var.type() == QVariant::Double)
+        if (var.type() == QVariant::Double || var.type() == QVariant::LongLong)
         {
             if (op == OpLessEqual)    { return num <= var.toInt(); }
             if (op == OpLessThan)     { return num < var.toInt();  }
@@ -451,6 +451,8 @@ bool parseNumericToString(Resource *r, ResourceItem *item, const deCONZ::ApsData
         return false;
     });
 
+    // DBG_Printf(DBG_DDF, "%s/%s numtostr: %s %lld --> %d\n", r->item(RAttrUniqueId)->toCString(), item->descriptor().suffix, srcItem->descriptor().suffix, num, i - to.cbegin());
+
     if (i != to.cend())
     {
         i++; // point next element (string)
@@ -460,11 +462,17 @@ bool parseNumericToString(Resource *r, ResourceItem *item, const deCONZ::ApsData
             const QString str = i->toString();
             if (!str.isEmpty())
             {
+                DBG_Printf(DBG_DDF, "%s/%s numtostr: %s %lld --> %s\n", r->item(RAttrUniqueId)->toCString(), item->descriptor().suffix, srcItem->descriptor().suffix, num, qPrintable(str));
                 item->setValue(str);
                 item->setLastZclReport(srcItem->lastZclReport()); // Treat as report
                 result = true;
             }
         }
+    }
+
+    if (result)
+    {
+        DeviceJS_ResourceItemValueChanged(item);
     }
 
     return result;
@@ -473,15 +481,19 @@ bool parseNumericToString(Resource *r, ResourceItem *item, const deCONZ::ApsData
 /*! A generic function to parse ZCL values from read/report commands.
     The item->parseParameters() is expected to be an object (given in the device description file).
 
-    {"fn": "zcl", "ep": endpoint, "cl": clusterId, "at": attributeId, "mf": manufacturerCode, "eval": expression}
+    {"fn": "zcl:attr", "ep": endpoint, "cl": clusterId, "mf": manufacturerCode, "at": attributeId, "eval": expression}
 
     - endpoint: (optional) 255 means any endpoint, 0 means auto selected from the related resource, defaults to 0
     - clusterId: string hex value
+    - manufacturerCode: (optional) string hex value
     - attributeId: string hex value or array of string hex values
-    - manufacturerCode: (optional) string hex value, defaults to "0x0000" for non manufacturer specific commands
-    - expression: Javascript expression to transform the raw value
+    - expression: Javascript expression to transform the attribute value to the Item value
 
-    Example: { "parse": {"fn": "zcl", "ep:" 1, "cl": "0x0402", "at": "0x0000", "eval": "Attr.val + R.item('config/offset').val" } }
+    Example: { "parse": {"fn": "zcl:attr", "ep:" 1, "cl": "0x0402", "at": "0x0000", "eval": "Attr.val + R.item('config/offset').val" } }
+
+    TODO: move code to parse a ZCL command to separate function.
+
+    Exmaple: { "parse": {"fn": "zcl:cmd", "ep": 2, "cl": "0xfc00", "mf", "0x100b", "script": "fc00_buttonevent.js" } }
  */
 bool parseZclAttribute(Resource *r, ResourceItem *item, const deCONZ::ApsDataIndication &ind, const deCONZ::ZclFrame &zclFrame, const QVariant &parseParameters)
 {
@@ -538,6 +550,16 @@ bool parseZclAttribute(Resource *r, ResourceItem *item, const deCONZ::ApsDataInd
     const auto &zclParam = item->zclParam();
 
     if (ind.clusterId() != zclParam.clusterId)
+    {
+        return result;
+    }
+    
+    if (!zclParam.hasCommandId && zclFrame.commandId() != deCONZ::ZclReadAttributesResponseId && zclFrame.commandId() != deCONZ::ZclReportAttributesId)
+    {
+        return result;
+    }
+    
+    if (zclParam.manufacturerCode != zclFrame.manufacturerCode())
     {
         return result;
     }
@@ -621,7 +643,7 @@ bool parseTuyaData(Resource *r, ResourceItem *item, const deCONZ::ApsDataIndicat
 {
     bool result = false;
 
-    if (ind.clusterId() != TUYA_CLUSTER_ID || !(zclFrame.commandId() == TY_DATA_REPORT || zclFrame.commandId() ==  TY_DATA_RESPONSE))
+    if (ind.clusterId() != TUYA_CLUSTER_ID || !(zclFrame.commandId() == TY_DATA_REPORT || zclFrame.commandId() ==  TY_DATA_RESPONSE || zclFrame.commandId() ==  TY_DATA_STATUS_SEARCH))
     {
         return result;
     }
@@ -1307,7 +1329,7 @@ bool parseIasZoneNotificationAndStatus(Resource *r, ResourceItem *item, const de
 
             if (map.contains(QLatin1String("mask")))
             {
-                QStringList alarmMask = map["mask"].toString().split(',', QString::SkipEmptyParts);
+                QStringList alarmMask = map["mask"].toString().split(',', SKIP_EMPTY_PARTS);
 
                 if (alarmMask.contains(QLatin1String("alarm1"))) { mask |= STATUS_ALARM1; }
                 if (alarmMask.contains(QLatin1String("alarm2"))) { mask |= STATUS_ALARM2; }
@@ -1328,6 +1350,8 @@ bool parseIasZoneNotificationAndStatus(Resource *r, ResourceItem *item, const de
 
         item->setValue((zoneStatus & mask) != 0);
         item->setLastZclReport(deCONZ::steadyTimeRef().ref);    // Treat as report
+
+        DeviceJS_ResourceItemValueChanged(item); // since this isn't going through JS add item to the changed set here
         result = true;
     }
 
@@ -1608,21 +1632,26 @@ bool parseAndSyncTime(Resource *r, ResourceItem *item, const deCONZ::ApsDataIndi
         }
     }
 
+    if (result)
+    {
+        DeviceJS_ResourceItemValueChanged(item);
+    }
+
     return result;
 }
 
 /*! A generic function to read ZCL attributes.
     The item->readParameters() is expected to be an object (given in the device description file).
 
-    { "fn": "zcl", "ep": endpoint, "cl" : clusterId, "at": attributeId, "mf": manufacturerCode, "noseq": noSequenceNumber  }
+    { "fn": "zcl:attr", "ep": endpoint, "cl" : clusterId, "mf": manufacturerCode, "at": attributeId, "noseq": noSequenceNumber  }
 
-    - endpoint, 0xff means any endpoint
+    - endpoint: the destination endpoint, use 0 for auto endpoint (from the uniqueid)
     - clusterId: string hex value
-    - attributeId: string hex value
-    - manufacturerCode: (optional) string hex value, defaults to "0x0000" for non manufacturer specific commands
+    - manufacturerCode: (optional) string hex value
+    - attributeId: string hex value or array of up to 8 string hex values
     - noSequenceNumber: (optional) bool must be set to `true` and must only be present if needed
 
-    Example: { "read": {"fn": "zcl", "ep": 1, "cl": "0x0402", "at": "0x0000", "mf": "0x110b"} }
+    Example: { "read": {"fn": "zcl:attr", "ep": 1, "cl": "0x0402", "mf": "0x110b", "at": "0x0000"} }
  */
 static DA_ReadResult readZclAttribute(const Resource *r, const ResourceItem *item, deCONZ::ApsController *apsCtrl, const QVariant &readParameters)
 {
@@ -1677,16 +1706,16 @@ static DA_ReadResult readZclAttribute(const Resource *r, const ResourceItem *ite
 /*! A generic function to write ZCL attributes.
     The \p writeParameters is expected to contain one object (given in the device description file).
 
-    { "fn": "zcl", "ep": endpoint, "cl": clusterId, "at": attributeId, "dt": zclDataType, "mf": manufacturerCode, "eval": expression }
+    { "fn": "zcl:attr", "ep": endpoint, "cl": clusterId, "mf": manufacturerCode, "at": attributeId, "dt": zclDataType, "eval": expression }
 
-    - endpoint: (optional) the destination endpoint
+    - endpoint: the destination endpoint, use 0 for auto endpoint (from the uniqueid)
     - clusterId: string hex value
+    - manufacturerCode: (optional) string hex value
     - attributeId: string hex value
     - zclDataType: string hex value
-    - manufacturerCode: must be set to 0x0000 for non manufacturer specific commands
-    - expression: to transform the item value
+    - expression: to transform the item value to the attribute value
 
-    Example: "write": {"cl": "0x0000", "at": "0xff0d",  "dt": "0x20", "mf": "0x11F5", "eval": "Item.val"}
+    Example: "write": {"fn": "zcl:attr", "cl": "0x0000", "mf": "0x11F5", "at": "0xff0d",  "dt": "0x20", "eval": "Item.val"}
  */
 bool writeZclAttribute(const Resource *r, const ResourceItem *item, deCONZ::ApsController *apsCtrl, const QVariant &writeParameters)
 {
@@ -1695,6 +1724,7 @@ bool writeZclAttribute(const Resource *r, const ResourceItem *item, deCONZ::ApsC
     Q_ASSERT(apsCtrl);
 
     bool result = false;
+
     const auto rParent = r->parentResource() ? r->parentResource() : r;
     const auto *extAddr = rParent->item(RAttrExtAddress);
     const auto *nwkAddr = rParent->item(RAttrNwkAddress);
@@ -1735,97 +1765,141 @@ bool writeZclAttribute(const Resource *r, const ResourceItem *item, deCONZ::ApsC
     bool ok;
     const auto dataType = variantToUint(map.value("dt"), UINT8_MAX, &ok);
     const auto expr = map.value("eval").toString();
-
     if (!ok || expr.isEmpty())
     {
         return result;
     }
+    deCONZ::ZclAttribute attribute(param.attributes[0], dataType, QLatin1String(""), deCONZ::ZclReadWrite, true);
 
-    DBG_Printf(DBG_INFO, "writeZclAttribute, ep: 0x%02X, cl: 0x%04X, attr: 0x%04X, type: 0x%02X, mfcode: 0x%04X, expr: %s\n", param.endpoint, param.clusterId, param.attributes.front(), dataType, param.manufacturerCode, qPrintable(expr));
-
-    deCONZ::ApsDataRequest req;
-    deCONZ::ZclFrame zclFrame;
-
-    req.setDstEndpoint(param.endpoint);
-    req.setTxOptions(deCONZ::ApsTxAcknowledgedTransmission);
-    req.setDstAddressMode(deCONZ::ApsNwkAddress);
-    req.dstAddress().setNwk(nwkAddr->toNumber());
-    req.dstAddress().setExt(extAddr->toNumber());
-    req.setClusterId(param.clusterId);
-    req.setProfileId(HA_PROFILE_ID);
-    req.setSrcEndpoint(1); // TODO
-
-    zclFrame.setSequenceNumber(zclNextSequenceNumber());
-    zclFrame.setCommandId(deCONZ::ZclWriteAttributesId);
-
-    if (param.manufacturerCode)
+    DeviceJs &engine = *DeviceJs::instance();
+    engine.reset();
+    engine.setResource(r);
+    engine.setItem(item);
+    if (engine.evaluate(expr) == JsEvalResult::Ok)
     {
-        zclFrame.setFrameControl(deCONZ::ZclFCProfileCommand |
-                                 deCONZ::ZclFCManufacturerSpecific |
-                                 deCONZ::ZclFCDirectionClientToServer |
-                                 deCONZ::ZclFCDisableDefaultResponse);
-        zclFrame.setManufacturerCode(param.manufacturerCode);
+        const auto value = engine.result();
+        DBG_Printf(DBG_DDF, "%s/%s expression: %s --> %s\n", r->item(RAttrUniqueId)->toCString(), item->descriptor().suffix, qPrintable(expr), qPrintable(value.toString()));
+        attribute.setValue(value);
     }
     else
     {
-        zclFrame.setFrameControl(deCONZ::ZclFCProfileCommand |
-                                 deCONZ::ZclFCDirectionClientToServer |
-                                 deCONZ::ZclFCDisableDefaultResponse);
+        DBG_Printf(DBG_DDF, "failed to evaluate expression for %s/%s: %s, err: %s\n", qPrintable(r->item(RAttrUniqueId)->toString()), item->descriptor().suffix, qPrintable(expr), qPrintable(engine.errorString()));
+        return result;
     }
 
-    { // payload
-        deCONZ::ZclAttribute attribute(param.attributes[0], dataType, QLatin1String(""), deCONZ::ZclReadWrite, true);
+    const auto zclResult = ZCL_WriteAttribute(param, extAddr->toNumber(), nwkAddr->toNumber(), apsCtrl, &attribute);
 
-        if (!expr.isEmpty())
+    result = zclResult.isEnqueued;
+    return result;
+}
+
+/*! A generic function to send a cluster-specific ZCL command.
+    The \p cmdParameters is expected to contain one object (given in the device description file).
+
+    { "fn": "zcl:cmd", "ep": endpoint, "cl": clusterId, "mf": manufacturerCode, "cmd": commandId, "eval": expression }
+
+    - endpoint: the destination endpoint, use 0 for auto endpoint (from the uniqueid)
+    - clusterId: string hex value
+    - manufacturerCode: (optional) string hex value
+    - commandId: string hex value
+    - expression: (optional) to transform the item value to the command payload as hex string value
+
+    Example: "read": {"fn": "zcl:cmd", "ep": "0x0b", "cl": "0x0000", "mf": "0x100b", "cmd": "0xc0",  "eval": "'002d00000040'"}
+ */
+static DA_ReadResult sendZclCommand(const Resource *r, const ResourceItem *item, deCONZ::ApsController *apsCtrl, const QVariant &cmdParameters)
+{
+    Q_ASSERT(r);
+    Q_ASSERT(item);
+    Q_ASSERT(apsCtrl);
+
+    DA_ReadResult result{};
+
+    const auto rParent = r->parentResource() ? r->parentResource() : r;
+    const auto *extAddr = rParent->item(RAttrExtAddress);
+    const auto *nwkAddr = rParent->item(RAttrNwkAddress);
+
+    if (!extAddr || !nwkAddr)
+    {
+        return result;
+    }
+
+    const auto map = cmdParameters.toMap();
+    ZCL_Param param = getZclParam(map);
+
+    if (!param.valid)
+    {
+        return result;
+    }
+
+    std::vector<uint8_t> payload;
+
+    if (map.contains("eval"))
+    {
+        const auto expr = map.value("eval").toString();
+        if (expr.isEmpty())
         {
-            DeviceJs &engine = *DeviceJs::instance();
-            engine.reset();
-            engine.setResource(r);
-            engine.setItem(item);
-
-            if (engine.evaluate(expr) == JsEvalResult::Ok)
+            return result;
+        }
+        DeviceJs &engine = *DeviceJs::instance();
+        engine.reset();
+        engine.setResource(r);
+        engine.setItem(item);
+        if (engine.evaluate(expr) == JsEvalResult::Ok)
+        {
+            const auto value = engine.result();
+            DBG_Printf(DBG_DDF, "%s/%s expression: %s --> %s\n", r->item(RAttrUniqueId)->toCString(), item->descriptor().suffix, qPrintable(expr), qPrintable(value.toString()));
+            auto a = QByteArray::fromHex(value.toString().toLatin1());
+            for (const auto b : a)
             {
-                const auto res = engine.result();
-                DBG_Printf(DBG_DDF, "%s/%s expression: %s --> %s\n", r->item(RAttrUniqueId)->toCString(), item->descriptor().suffix, qPrintable(expr), qPrintable(res.toString()));
-                attribute.setValue(res);
-            }
-            else
-            {
-                DBG_Printf(DBG_DDF, "failed to evaluate expression for %s/%s: %s, err: %s\n", qPrintable(r->item(RAttrUniqueId)->toString()), item->descriptor().suffix, qPrintable(expr), qPrintable(engine.errorString()));
-                return result;
+                payload.push_back(b);
             }
         }
-
-        QDataStream stream(&zclFrame.payload(), QIODevice::WriteOnly);
-        stream.setByteOrder(QDataStream::LittleEndian);
-
-        stream << attribute.id();
-        stream << attribute.dataType();
-
-        if (!attribute.writeToStream(stream))
+        else
         {
+            DBG_Printf(DBG_DDF, "failed to evaluate expression for %s/%s: %s, err: %s\n", qPrintable(r->item(RAttrUniqueId)->toString()), item->descriptor().suffix, qPrintable(expr), qPrintable(engine.errorString()));
             return result;
         }
     }
 
-    { // ZCL frame
-        QDataStream stream(&req.asdu(), QIODevice::WriteOnly);
-        stream.setByteOrder(QDataStream::LittleEndian);
-        zclFrame.writeToStream(stream);
-    }
+    const auto zclResult = ZCL_SendCommand(param, extAddr->toNumber(), nwkAddr->toNumber(), apsCtrl, &payload);
 
-    result = apsCtrl->apsdeDataRequest(req) == deCONZ::Success;
+    result.isEnqueued = zclResult.isEnqueued;
+    result.apsReqId = zclResult.apsReqId;
+    result.sequenceNumber = zclResult.sequenceNumber;
+    result.clusterId = param.clusterId;
+    result.ignoreResponseSequenceNumber = param.ignoreResponseSeq == 1;
 
     return result;
+}
+
+/*! A generic function to send a cluster-specific ZCL command.
+    The \p cmdParameters is expected to contain one object (given in the device description file).
+
+    { "fn": "zcl:cmd", "ep": endpoint, "cl": clusterId, "mf": manufacturerCode, "cmd": commandId, "eval": expression }
+
+    - endpoint: the destination endpoint, use 0 for auto endpoint (from the uniqueid)
+    - clusterId: string hex value
+    - manufacturerCode: (optional) string hex value
+    - commandId: string hex value
+    - expression: (optional) to transform the item value to the command payload as hex string value
+
+    Example: "write": {"fn": "zcl:cmd", "cl": "0x0000", "mf": "0x100b", "cmd": "0xc0",  "eval": "'002d00000040'"}
+ */
+bool writeZclCommand(const Resource *r, const ResourceItem *item, deCONZ::ApsController *apsCtrl, const QVariant &cmdParameters)
+{
+    const auto result = sendZclCommand(r, item, apsCtrl, cmdParameters);
+    return result.isEnqueued;
 }
 
 ParseFunction_t DA_GetParseFunction(const QVariant &params)
 {
     ParseFunction_t result = nullptr;
 
-    const std::array<ParseFunction, 6> functions =
+    const std::array<ParseFunction, 8> functions =
     {
-        ParseFunction(QLatin1String("zcl"), 1, parseZclAttribute),
+        ParseFunction(QLatin1String("zcl"), 1, parseZclAttribute), // Deprecated
+        ParseFunction(QLatin1String("zcl:attr"), 1, parseZclAttribute),
+        ParseFunction(QLatin1String("zcl:cmd"), 1, parseZclAttribute),
         ParseFunction(QLatin1String("xiaomi:special"), 1, parseXiaomiSpecial),
         ParseFunction(QLatin1String("ias:zonestatus"), 1, parseIasZoneNotificationAndStatus),
         ParseFunction(QLatin1String("tuya"), 1, parseTuyaData),
@@ -1846,7 +1920,7 @@ ParseFunction_t DA_GetParseFunction(const QVariant &params)
         }
         else
         {
-            fnName = QLatin1String("zcl"); // default
+            fnName = QLatin1String("zcl:attr"); // default
         }
     }
 
@@ -1866,9 +1940,11 @@ ReadFunction_t DA_GetReadFunction(const QVariant &params)
 {
     ReadFunction_t result = nullptr;
 
-    const std::array<ReadFunction, 2> functions =
+    const std::array<ReadFunction, 4> functions =
     {
-        ReadFunction(QLatin1String("zcl"), 1, readZclAttribute),
+        ReadFunction(QLatin1String("zcl"), 1, readZclAttribute), // Deprecated
+        ReadFunction(QLatin1String("zcl:attr"), 1, readZclAttribute),
+        ReadFunction(QLatin1String("zcl:cmd"), 1, sendZclCommand),
         ReadFunction(QLatin1String("tuya"), 1, readTuyaAllData)
     };
 
@@ -1885,7 +1961,7 @@ ReadFunction_t DA_GetReadFunction(const QVariant &params)
         }
         else
         {
-            fnName = QLatin1String("zcl"); // default
+            fnName = QLatin1String("zcl:attr"); // default
         }
     }
 
@@ -1905,9 +1981,11 @@ WriteFunction_t DA_GetWriteFunction(const QVariant &params)
 {
     WriteFunction_t result = nullptr;
 
-    const std::array<WriteFunction, 2> functions =
+    const std::array<WriteFunction, 4> functions =
     {
-        WriteFunction(QLatin1String("zcl"), 1, writeZclAttribute),
+        WriteFunction(QLatin1String("zcl"), 1, writeZclAttribute), // Deprecated
+        WriteFunction(QLatin1String("zcl:attr"), 1, writeZclAttribute),
+        WriteFunction(QLatin1String("zcl:cmd"), 1, writeZclCommand),
         WriteFunction(QLatin1String("tuya"), 1, writeTuyaData)
     };
 
@@ -1924,7 +2002,7 @@ WriteFunction_t DA_GetWriteFunction(const QVariant &params)
         }
         else
         {
-            fnName = QLatin1String("zcl"); // default
+            fnName = QLatin1String("zcl:attr"); // default
         }
     }
 
@@ -1938,4 +2016,130 @@ WriteFunction_t DA_GetWriteFunction(const QVariant &params)
     }
 
     return result;
+}
+
+/* APS core queue tracking
+
+   Track the running APS queue to aid scheduling of new APS requests
+   in order to not overhelm the queue. The aim is to execute low priority tasks,
+   like polling and binding maintenance, only when the queue is not too busy.
+   This leaves room to send high priority commands e.g. to control a light
+   without waiting for low priority APS request to be finished.
+ */
+#define APS_BUSY_TABLE_SIZE 32
+
+struct DA_ReqBusy
+{
+    uint64_t dstExtAddr;
+    int64_t tref;
+    uint16_t clusterId;
+    uint8_t dstEndpoint;
+    uint8_t apsRequestId;
+};
+
+static unsigned _DA_ApsUnconfirmedCount = 0;
+static DA_ReqBusy _DA_BusyTable[APS_BUSY_TABLE_SIZE];
+
+/*! Returns number of APS requests busy in the core APS queue. */
+unsigned DA_ApsUnconfirmedRequests()
+{
+    return _DA_ApsUnconfirmedCount;
+}
+
+/*! Returns number of APS requests, for \p extAddr, busy in the core APS queue. */
+unsigned DA_ApsUnconfirmedRequestsForExtAddress(uint64_t extAddr)
+{
+    unsigned result = 0;
+
+    if (_DA_ApsUnconfirmedCount != 0)
+    {
+        for (unsigned i = 0; i < APS_BUSY_TABLE_SIZE; i++)
+        {
+            DA_ReqBusy *e = &_DA_BusyTable[i];
+
+            if (e->tref != 0 && e->dstExtAddr == extAddr)
+            {
+                result++;
+            }
+
+            if (result == _DA_ApsUnconfirmedCount)
+            {
+                break; // nothing more to count
+            }
+        }
+    }
+
+    return result;
+}
+
+/*! Call back when an APS request is put in the core APS queue.
+    Record it here to track it until it's confirmed aka done.
+ */
+void DA_ApsRequestEnqueued(const deCONZ::ApsDataRequest &req)
+{
+    if (!req.dstAddress().hasExt())
+    {
+        DBG_Assert(!req.dstAddress().isNwkUnicast());
+        return;
+    }
+
+    const int64_t now = deCONZ::steadyTimeRef().ref / 1000;
+
+    for (unsigned i = 0; i < APS_BUSY_TABLE_SIZE; i++)
+    {
+        DA_ReqBusy *e = &_DA_BusyTable[i];
+
+        if (e->tref != 0 && ((now - e->tref) > 60))
+        {
+            // confirm timeout, should normally not happen
+            DBG_Assert(_DA_ApsUnconfirmedCount > 0);
+            if (_DA_ApsUnconfirmedCount > 0)
+            {
+                _DA_ApsUnconfirmedCount--;
+            }
+            memset(e, 0, sizeof(*e));
+        }
+
+        if (e->tref == 0)
+        {
+            e->dstExtAddr = req.dstAddress().ext();
+            e->dstEndpoint = req.dstEndpoint();
+            e->apsRequestId = req.id();
+            e->clusterId = req.clusterId();
+            e->tref = now;
+            DBG_Assert(_DA_ApsUnconfirmedCount < APS_BUSY_TABLE_SIZE);
+            if (_DA_ApsUnconfirmedCount < APS_BUSY_TABLE_SIZE)
+            {
+                _DA_ApsUnconfirmedCount++;
+            }
+            return;
+        }
+    }
+}
+
+/*! Callback when a APS request is confirmed, aka when it has been sent by the
+    firmware or an error occured. The actual status isn't considered here, we
+    only care that the APS request is 'done'.
+ */
+void DA_ApsRequestConfirmed(const deCONZ::ApsDataConfirm &conf)
+{
+    if (!conf.dstAddress().hasExt())
+    {
+        return;
+    }
+
+    if (_DA_ApsUnconfirmedCount != 0)
+    {
+        for (unsigned i = 0; i < APS_BUSY_TABLE_SIZE; i++)
+        {
+            DA_ReqBusy *e = &_DA_BusyTable[i];
+            if (e->apsRequestId != conf.id()) continue;
+            if (e->dstExtAddr != conf.dstAddress().ext()) continue;
+            if (e->dstEndpoint != conf.dstEndpoint()) continue;
+
+            memset(e, 0, sizeof(*e));
+            _DA_ApsUnconfirmedCount--;
+            return;
+        }
+    }
 }

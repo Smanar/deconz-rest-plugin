@@ -97,6 +97,7 @@
           },
           "write": {
             "at": "0x0102",
+            "change.timeout": 3600,
             "cl": "0xFCC0",
             "dt": "0x20",
             "ep": 1,
@@ -129,6 +130,7 @@
           },
           "write": {
             "at": "0x0152",
+            "change.timeout": 3600,
             "cl": "0xFCC0",
             "dt": "0x20",
             "ep": 1,
@@ -170,6 +172,7 @@
           },
           "write": {
             "at": "0x010C",
+            "change.timeout": 3600,
             "cl": "0xFCC0",
             "dt": "0x20",
             "ep": 1,
@@ -199,7 +202,7 @@
             "mf": "0x115F"
           },
           "read": {
-            "fn": "None"
+            "fn": "none"
           }
         }
       ]
@@ -294,6 +297,7 @@
           },
           "write": {
             "at": "0x0152",
+            "change.timeout": 3600,
             "cl": "0xFCC0",
             "dt": "0x20",
             "ep": 1,
@@ -320,7 +324,7 @@
         {
           "name": "config/tholdoffset"
         },
-         {
+        {
           "name": "state/dark"
         },
         {
@@ -342,7 +346,7 @@
             "script": "xiaomi_rtcgq14lm_lux_to_lightlevel.js"
           },
           "read": {
-            "fn": "None"
+            "fn": "none"
           }
         }
       ]
