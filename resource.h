@@ -285,6 +285,7 @@ extern const char *RConfigHostFlags;
 extern const char *RConfigHumiMaxThreshold;
 extern const char *RConfigHumiMinThreshold;
 extern const char *RConfigInterfaceMode;
+extern const char *RConfigReverseMode;
 extern const char *RConfigLastChangeAmount;
 extern const char *RConfigLastChangeSource;
 extern const char *RConfigLastChangeTime;

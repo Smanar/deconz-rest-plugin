@@ -17,6 +17,15 @@
 #define ONOFF_COMMAND_ON      0x01
 #define ONOFF_COMMAND_OFF_WITH_EFFECT  0x040
 
+#define WINDOW_COVERING_CLUSTER_ID            0x0102
+#define WINDOW_COVERING_COMMAND_OPEN            0x00
+#define WINDOW_COVERING_COMMAND_CLOSE           0x01
+#define WINDOW_COVERING_COMMAND_STOP            0x02
+#define WINDOW_COVERING_COMMAND_GOTO_LIFT_VALUE 0x04
+#define WINDOW_COVERING_COMMAND_GOTO_LIFT_PCT   0x05
+#define WINDOW_COVERING_COMMAND_GOTO_TILT_VALUE 0x07
+#define WINDOW_COVERING_COMMAND_GOTO_TILT_PCT   0x08
+
 quint8 zclNextSequenceNumber(); // todo defined in de_web_plugin_private.h
 
 StateChange::StateChange(StateChange::State initialState, StateChangeFunction_t fn, quint8 dstEndpoint) :
@@ -272,6 +281,103 @@ int SC_WriteZclAttribute(const Resource *r, const StateChange *stateChange, deCO
     }
 
     return written > 0 ? 0 : -5;
+}
+
+/*! Sends a ZCL command to the Window Covering cluster.
+
+    StateChange::parameters() -> "cmd"
+
+        WINDOW_COVERING_COMMAND_OPEN
+        WINDOW_COVERING_COMMAND_CLOSE
+        WINDOW_COVERING_COMMAND_STOP
+        WINDOW_COVERING_COMMAND_GOTO_LIFT_PCT
+
+    \returns 0 - if the command has been enqueued, or a negative number on failure.
+ */
+int SC_WindowCovering(const Resource *r, const StateChange *stateChange, deCONZ::ApsController *apsCtrl)
+{
+    Q_ASSERT(r);
+    Q_ASSERT(stateChange);
+    Q_ASSERT(apsCtrl);
+
+    quint8 cmd = 0xff;
+    uint16_t pct = 0;
+
+    if (r->parentResource())
+    {
+        r = r->parentResource(); // Device* has nwk/ext address
+    }
+
+    for (const auto &i : stateChange->parameters())
+    {
+        if (i.name == QLatin1String("cmd"))
+        {
+            bool ok;
+            auto val =  i.value.toUInt(&ok);
+
+            if (ok && (val == WINDOW_COVERING_COMMAND_OPEN || val == WINDOW_COVERING_COMMAND_CLOSE || val == WINDOW_COVERING_COMMAND_GOTO_LIFT_PCT || val == WINDOW_COVERING_COMMAND_STOP))
+            {
+                cmd = static_cast<quint8>(val);
+            }
+        }
+        else if (i.name == QLatin1String("pct"))
+        {
+            bool ok;
+            auto val =  i.value.toUInt(&ok);
+
+            if (ok && (val < 100))
+            {
+                pct = static_cast<uint16_t>(val);
+            }
+        }
+    }
+
+    if (cmd == 0xff)
+    {
+        return -1;
+    }
+
+    deCONZ::ApsDataRequest req;
+    deCONZ::ZclFrame zclFrame;
+
+    req.setClusterId(WINDOW_COVERING_CLUSTER_ID);
+    req.setProfileId(HA_PROFILE_ID);
+    req.dstAddress().setNwk(r->item(RAttrNwkAddress)->toNumber());
+    req.dstAddress().setExt(r->item(RAttrExtAddress)->toNumber());
+    req.setDstAddressMode(deCONZ::ApsNwkAddress);
+    req.setDstEndpoint(stateChange->dstEndpoint());
+    req.setSrcEndpoint(0x01);
+
+    zclFrame.payload().clear();
+    zclFrame.setSequenceNumber(zclNextSequenceNumber());
+    zclFrame.setCommandId(cmd);
+    zclFrame.setFrameControl(deCONZ::ZclFCClusterCommand |
+                             deCONZ::ZclFCDirectionClientToServer |
+                             deCONZ::ZclFCDisableDefaultResponse);
+    
+    if (cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_VALUE || cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_PCT ||
+        cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_VALUE || cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_PCT)
+    {
+        QDataStream stream(&zclFrame.payload(), QIODevice::WriteOnly);
+        stream.setByteOrder(QDataStream::LittleEndian);
+
+        if (cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_VALUE || cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_VALUE)
+        {
+            stream << pct;
+        }
+        if (cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_PCT || cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_PCT)
+        {
+            stream << pct;
+        }
+    }
+
+    QDataStream stream(&req.asdu(), QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::LittleEndian);
+    zclFrame.writeToStream(stream);
+
+    DBG_Printf(DBG_INFO, "SC_WindowCovering()\n");
+
+    return apsCtrl->apsdeDataRequest(req) == deCONZ::Success ? 0 : -2;
 }
 
 /*! Sends a ZCL command to the on/off cluster.

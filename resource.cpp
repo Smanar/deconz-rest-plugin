@@ -271,6 +271,7 @@ const char *RConfigHostFlags = "config/hostflags";
 const char *RConfigHumiMaxThreshold = "config/humiditymaxthreshold";
 const char *RConfigHumiMinThreshold = "config/humidityminthreshold";
 const char *RConfigInterfaceMode = "config/interfacemode";
+const char *RConfigReverseMode = "config/reversemode";
 const char *RConfigLastChangeAmount = "config/lastchange_amount";
 const char *RConfigLastChangeSource = "config/lastchange_source";
 const char *RConfigLastChangeTime = "config/lastchange_time";
@@ -559,6 +560,7 @@ void initResourceDescriptors()
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeInt8, QVariant::Double, RConfigHumiMaxThreshold));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeInt8, QVariant::Double, RConfigHumiMinThreshold));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt8, QVariant::Double, RConfigInterfaceMode));
+    rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt8, QVariant::Double, RConfigReverseMode));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeInt16, QVariant::Double, RConfigLastChangeAmount));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeUInt8, QVariant::Double, RConfigLastChangeSource));
     rItemDescriptors.emplace_back(ResourceItemDescriptor(DataTypeTime, QVariant::String, RConfigLastChangeTime));

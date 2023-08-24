@@ -69,6 +69,9 @@
  *    To leave calibration mode, clear bit #1 in the Mode attribute, e.g. write attribute 0x0017 as 0x00.
  */
 
+#include "device_descriptions.h"
+#include "de_web_plugin.h"
+
 #include "de_web_plugin_private.h"
 #include "product_match.h"
 
@@ -256,6 +259,111 @@ void DeRestPluginPrivate::handleWindowCoveringClusterIndication(const deCONZ::Ap
  */
 bool DeRestPluginPrivate::addTaskWindowCovering(TaskItem &task, uint8_t cmd, uint16_t pos, uint8_t pct)
 {
+    if (task.lightNode && task.lightNode->parentResource())
+    {
+        Device *device = static_cast<Device*>(task.lightNode->parentResource());
+
+        if (device && device->managed())
+        {
+            
+            //For compatibility, not used yet
+            //uint16_t bri = pct * 254 / 100;
+            //bool on = bri > 0;
+            
+            DBG_Printf(DBG_INFO, "SC_WindowCovering 9\n");
+            
+            if (cmd == WINDOW_COVERING_COMMAND_STOP)
+            {
+                // No state change to do ?
+            }
+            else if (cmd == WINDOW_COVERING_COMMAND_OPEN || cmd == WINDOW_COVERING_COMMAND_CLOSE)
+            {
+                bool open = false;
+                if (cmd == WINDOW_COVERING_COMMAND_OPEN)
+                {
+                    open = true;
+                }
+                
+                ResourceItem *openItem = task.lightNode->item(RStateOpen);
+                const auto ddfItem = DDF_GetItem(openItem);
+                
+                //Need To reverse ?
+                bool reverse = false;
+                const auto parseParam = ddfItem.parseParameters.toMap();
+                if (parseParam.contains(QLatin1String("reverse")))
+                {
+                    reverse = parseParam.value(QLatin1String("reverse")).toBool();
+                    
+                    if (reverse)
+                    {
+                        DBG_Printf(DBG_INFO, "reverse covering %d\n",reverse);// TO REMOVE
+                        
+                        if (cmd == WINDOW_COVERING_COMMAND_OPEN)
+                        {
+                            cmd = WINDOW_COVERING_COMMAND_CLOSE;
+                        }
+                        else
+                        {
+                            cmd = WINDOW_COVERING_COMMAND_OPEN;
+                        }
+                    }
+                }
+                
+                if (!ddfItem.writeParameters.isNull())
+                {
+                    StateChange change(StateChange::StateCallFunction, SC_WriteZclAttribute, task.req.dstEndpoint());
+                    change.addTargetValue(RStateOpen, open);
+                    task.lightNode->addStateChange(change);
+                    return true;
+                }
+                else // only verify after classic command
+                {
+                    StateChange change(StateChange::StateWaitSync, SC_WindowCovering, task.req.dstEndpoint());
+                    change.addTargetValue(RStateOpen, open);
+                    change.addParameter(QLatin1String("cmd"), cmd);
+                    task.lightNode->addStateChange(change);
+                }
+            }
+            else if (cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_VALUE || cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_PCT)
+            {
+                ResourceItem *liftItem = task.lightNode->item(RStateLift);
+                const auto ddfItem = DDF_GetItem(liftItem);
+                
+                //Need To reverse ?
+                bool reverse = false;
+                const auto parseParam = ddfItem.parseParameters.toMap();
+                if (parseParam.contains(QLatin1String("reverse")))
+                {
+                    pos = 255 - pos;
+                    pct = 100 - pct;
+                }
+                
+                if (!ddfItem.writeParameters.isNull())
+                {
+                    StateChange change(StateChange::StateCallFunction, SC_WriteZclAttribute, task.req.dstEndpoint());
+                    change.addTargetValue(RStateLift, pct);
+                    task.lightNode->addStateChange(change);
+                    return true;
+                }
+                else // only verify after classic command
+                {
+                    StateChange change(StateChange::StateWaitSync, SC_WindowCovering, task.req.dstEndpoint());
+                    change.addTargetValue(RStateLift, pct);
+                    change.addParameter(QLatin1String("cmd"), cmd);
+                    change.addParameter(QLatin1String("pct"), pct);
+                    task.lightNode->addStateChange(change);
+                }
+            }
+            else
+            {
+                return false;
+            }  
+
+        }
+    }
+    
+    DBG_Printf(DBG_INFO, "SC_WindowCovering 8\n");
+
     task.taskType = TaskWindowCovering;
 
     task.req.setClusterId(WINDOW_COVERING_CLUSTER_ID);
@@ -268,16 +376,16 @@ bool DeRestPluginPrivate::addTaskWindowCovering(TaskItem &task, uint8_t cmd, uin
                                   deCONZ::ZclFCDirectionClientToServer |
                                   deCONZ::ZclFCDisableDefaultResponse);
 
-    if (cmd == 0x04 || cmd == 0x05 || cmd == 0x07 || cmd == 0x08)
+    if (cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_VALUE || cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_PCT || cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_VALUE || cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_PCT)
     { // payload
         QDataStream stream(&task.zclFrame.payload(), QIODevice::WriteOnly);
         stream.setByteOrder(QDataStream::LittleEndian);
 
-        if (cmd == 0x04 || cmd == 0x07)
+        if (cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_VALUE || cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_VALUE)
         {
             stream << pos;  // 16-bit moveToPosition
         }
-        if (cmd == 0x05 || cmd == 0x08)
+        if (cmd == WINDOW_COVERING_COMMAND_GOTO_LIFT_PCT || cmd == WINDOW_COVERING_COMMAND_GOTO_TILT_PCT)
         {
             stream << pct;  // 8-bit moveToPct
         }
