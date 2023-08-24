@@ -1085,7 +1085,6 @@ public:
     void initAuthentication();
     bool allowedToCreateApikey(const ApiRequest &req, ApiResponse &rsp, QVariantMap &map);
     void authorise(ApiRequest &req, ApiResponse &rsp);
-    QString encryptString(const QString &str);
 
     // REST API gateways
     int handleGatewaysApi(const ApiRequest &req, ApiResponse &rsp);
@@ -1156,7 +1155,6 @@ public:
     int deleteLight(const ApiRequest &req, ApiResponse &rsp);
     int removeAllScenes(const ApiRequest &req, ApiResponse &rsp);
     int removeAllGroups(const ApiRequest &req, ApiResponse &rsp);
-    int getConnectivity(const ApiRequest &req, ApiResponse &rsp, bool alt);
     void handleLightEvent(const Event &e);
 
     bool lightToMap(const ApiRequest &req, const LightNode *webNode, QVariantMap &map);
@@ -1235,7 +1233,6 @@ public:
     int createRule(const ApiRequest &req, ApiResponse &rsp);
     int updateRule(const ApiRequest &req, ApiResponse &rsp);
     int deleteRule(const ApiRequest &req, ApiResponse &rsp);
-    void queueCheckRuleBindings(const Rule &rule);
     bool evaluateRule(Rule &rule, const Event &e, Resource *eResource, ResourceItem *eItem, QDateTime now, QDateTime previousNow);
     void indexRuleTriggers(Rule &rule);
     void triggerRule(Rule &rule);
@@ -1330,11 +1327,8 @@ public Q_SLOTS:
     void checkSensorGroup(Sensor *sensor);
     void checkOldSensorGroups(Sensor *sensor);
     void deleteGroupsWithDeviceMembership(const QString &id);
-    void processUbisysBinding(Sensor *sensor, const Binding &bnd);
     void bindingTimerFired();
-    void bindingToRuleTimerFired();
     void bindingTableReaderTimerFired();
-    void verifyRuleBindingsTimerFired();
     void indexRulesTriggers();
     void fastRuleCheckTimerFired();
     void webhookFinishedRequest(QNetworkReply *reply);
@@ -1459,7 +1453,6 @@ public:
     Rule *getRuleForName(const QString &name);
     void addSensorNode(const deCONZ::Node *node, const deCONZ::NodeEvent *event = 0);
     void addSensorNode(const deCONZ::Node *node, const SensorFingerprint &fingerPrint, const QString &type, const QString &modelId, const QString &manufacturer);
-    void checkUpdatedFingerPrint(const deCONZ::Node *node, quint8 endpoint, Sensor *sensorNode);
     void checkSensorNodeReachable(Sensor *sensor, const deCONZ::NodeEvent *event = 0);
     void checkSensorButtonEvent(Sensor *sensor, const deCONZ::ApsDataIndication &ind, const deCONZ::ZclFrame &zclFrame);
     void updateSensorNode(const deCONZ::NodeEvent &event);
@@ -1716,7 +1709,7 @@ public:
     size_t apiAuthCurrent;
     std::vector<ApiAuth> apiAuths;
     QString gwAdminUserName;
-    QString gwAdminPasswordHash;
+    std::string gwAdminPasswordHash;
 
     struct SwUpdateState {
      QString noUpdate;
@@ -2119,7 +2112,6 @@ public:
     std::vector<Sensor> sensors;
     std::list<TaskItem> tasks;
     std::list<TaskItem> runningTasks;
-    QTimer *verifyRulesTimer;
     QTimer *taskTimer;
     QTimer *groupTaskTimer;
     QTimer *checkSensorsTimer;
@@ -2135,12 +2127,9 @@ public:
     EventEmitter *eventEmitter = nullptr;
 
     // bindings
-    size_t verifyRuleIter;
     bool gwReportingEnabled;
-    QTimer *bindingToRuleTimer;
     QTimer *bindingTimer;
     QTimer *bindingTableReaderTimer;
-    std::list<Binding> bindingToRuleQueue; // check if rule exists for discovered bindings
     std::list<BindingTask> bindingQueue; // bind/unbind queue
     std::vector<BindingTableReader> bindingTableReaders;
 

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(de_rest_plugin VERSION 2.22.01 LANGUAGES C;CXX)
+project(de_rest_plugin VERSION 2.23.00 LANGUAGES C;CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -13,6 +13,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt5 COMPONENTS Core Widgets Network WebSockets REQUIRED)
 find_package(Git REQUIRED)
+
+if (UNIX)
+    include(FindPkgConfig)
+    pkg_check_modules (OPENSSL openssl)
+endif()
 
 if (NOT DECONZ_FULL_BUILD)
     # standalone build
@@ -48,8 +53,8 @@ set(PLUGIN_INCLUDE_FILES
     bindings.h
     button_maps.h
     colorspace.h
-    connectivity.h
     crypto/mmohash.h
+    crypto/password.h
     crypto/random.h
     crypto/scrypt.h
     database.h
@@ -134,8 +139,8 @@ add_library(${PROJECT_NAME} SHARED
     button_maps.cpp
     change_channel.cpp
     colorspace.cpp
-    connectivity.cpp
     crypto/mmohash.cpp
+    crypto/password.cpp
     crypto/random.cpp
     crypto/scrypt.cpp
     database.cpp
@@ -249,6 +254,7 @@ target_compile_definitions(${PROJECT_NAME}
     PRIVATE
     USE_WEBSOCKETS=1
     USE_DUKTAPE_JS_ENGINE=1
+    USE_ULIB_SHARED=1
 
     GW_SW_VERSION="\"\"${PROJECT_VERSION}\"\""
     GW_SW_DATE=${GIT_DATE}
@@ -267,6 +273,11 @@ target_compile_definitions(${PROJECT_NAME}
     GW_MIN_DERFUSB23E0X_FW_VERSION=0x22030300
     GW_DEFAULT_NAME="\"\"Phoscon-GW\"\""
 )
+
+if (OPENSSL_FOUND)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE HAS_OPENSSL=1)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${OPENSSL_INCLUDE_DIRS})
+endif()
 
 if (Qt5Core_VERSION_STRING VERSION_LESS "5.15.0")
     target_compile_definitions(${PROJECT_NAME} PRIVATE SKIP_EMPTY_PARTS=QString::SkipEmptyParts )
