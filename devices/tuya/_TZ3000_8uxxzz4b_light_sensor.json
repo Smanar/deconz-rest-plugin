@@ -6,14 +6,26 @@
     "_TZ3000_hy6ncvmw",
     "_TZ3000_9kbbfeho",
     "_TZ3000_l6rsaipj",
-    "_TZ3000_j6adk9id"
+    "_TZ3000_j6adk9id",
+    "_TYZB01_4mdqxxnn",
+    "_TYZB01_m6ec2pgj",
+    "_TZ3000_do6txrcw",
+    "_TZ3000_7kscdesh",
+    "_TZ3000_7y90pany",
+    "HOBEIAN"
   ],
   "modelid": [
     "TS0222",
     "TS0222",
     "TS0222",
     "TS0222",
-    "TS0222"
+    "TS0222",
+    "TS0222",
+    "TS0222",
+    "TS0222",
+    "TS0222",
+    "TS0222",
+    "ZG-106Z"
   ],
   "vendor": "Tuya",
   "product": "Illuminance sensor",
